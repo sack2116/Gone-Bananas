@@ -6,7 +6,7 @@
 
   // From the Firebase console: Project settings > General > Your apps > Web app.
   // These are not secret; firestore.rules decides what can be written.
-  const FIREBASE = { projectId: '', apiKey: '' };
+  const FIREBASE = { projectId: 'gonebananas-c8808', apiKey: 'AIzaSyB8rgvtlOPE2gl8yNwxzyOMGqKrTJlugjw' };
 
   const ready = () => !!(FIREBASE.projectId && FIREBASE.apiKey);
   const docsUrl = () => `https://firestore.googleapis.com/v1/projects/${FIREBASE.projectId}/databases/(default)/documents`;

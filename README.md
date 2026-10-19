@@ -24,6 +24,7 @@ Plays in any browser on **phones, tablets and computers**, and can be installed 
 - **🪙 Coins worth 1, 2 or 5** – every **20 coin points** gives an extra life.
 - **📏 Your climber grows** a little bigger every level.
 - **⭐ Up to 3 stars per level** – reach the top, don't fall, and grab most of the coins. **PERFECT!** bonus for landing in the middle of a banana, and a speed bonus for finishing fast.
+- **🏆 Online scoreboard (all devices)** – each player signs up once with a name, whichever climber they pick. The top 10 shows each player's best score and highest level beaten (🌴 Jungle / 🚀 Galaxy). Using the same name on a phone, tablet or computer counts as the same player. Scores are sent after every level and when the game ends. Without internet, the score is kept and sent next time.
 - **🔓 Progress is saved** on the device: unlocked levels, stars and best score.
 - **🎵 Music and sound effects** made in code, with no audio files. Each can be turned on or off.
 - **📱 Works offline** once it has been opened, and can be added to the home screen.
@@ -48,6 +49,8 @@ Plays in any browser on **phones, tablets and computers**, and can be installed 
 | `style.css` | Menus, buttons and touch controls. |
 | `js/levels.js` | Level design for both worlds: speed, gravity, banana size, gaps, sliding/brown/ghost bananas, Bruno and coins for levels 1–30. |
 | `js/game.js` | The game: physics, the three characters (drawn in code), screens, saving, music and sounds. |
+| `js/online.js` | The online scoreboard. Talks to the Firebase project **gonebananas-c8808** (Firestore database). |
+| `firestore.rules` | Scoreboard security: anyone can read; entries can only be created or raised (never lowered or deleted); names 2–12 characters, scores up to 200,000, levels up to 30. Deploy with `npx firebase-tools deploy --only firestore:rules --project gonebananas-c8808`. |
 | `tests/play-test.js` | A robot that plays every level 20 times to check each level can be beaten. |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Home-screen install and offline play. |
 | `tools/make_icons.py` | Draws the app icon (crazy monkey hugging a banana). Run `python tools/make_icons.py` after changing it. |
@@ -64,7 +67,8 @@ Plays in any browser on **phones, tablets and computers**, and can be installed 
 
 - More characters, and unlocking hats or outfits with coins.
 - Power-ups (banana magnet, double jump, shield).
-- Online leaderboard (would need a small server, e.g. on Render).
+- Sync unlocked levels and stars by player name, so the tablet picks up where the phone left off.
+- A way to remove a player from the scoreboard (today only possible from the Firebase console).
 - Publish to the App Store / Google Play by wrapping the game in an app shell such as Capacitor.
 
 ---
