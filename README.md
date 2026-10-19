@@ -45,6 +45,7 @@ Plays in any browser on **phones, tablets and computers**, and can be installed 
 | `js/game.js` | The game: physics, the three characters (drawn in code), screens, saving, music and sounds. |
 | `tests/play-test.js` | A robot that plays every level 20 times to check each level can be beaten. |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Home-screen install and offline play. |
+| `tools/make_icons.py` | Draws the app icon (crazy monkey hugging a banana). Run `python tools/make_icons.py` after changing it. |
 | `.github/workflows/pages.yml` | Runs the robot test, then publishes the game to GitHub Pages on every push to `main`. |
 
 ## 🛠️ Running and Changing It
