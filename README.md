@@ -7,6 +7,27 @@ Plays in any browser on **phones, tablets and computers**, and can be installed 
 
 ---
 
+## 📸 Screenshots
+
+<table>
+  <tr>
+    <td align="center" width="33%"><img src="screenshots/title.jpg" alt="Title screen" width="250"><br><b>Title screen</b></td>
+    <td align="center" width="33%"><img src="screenshots/climbers.jpg" alt="Choose your climber" width="250"><br><b>Choose your climber</b><br>Gorilla, Dog or PomPom</td>
+    <td align="center" width="33%"><img src="screenshots/levels.jpg" alt="Pick a level" width="250"><br><b>30 levels in 2 worlds</b><br>Stars and unlocked levels</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/jungle.jpg" alt="Jungle level with Bruno" width="250"><br><b>🌴 Jungle</b><br>Bruno winds up a coconut (watch for the <b>!</b>)</td>
+    <td align="center"><img src="screenshots/space.jpg" alt="Banana Galaxy level" width="250"><br><b>🚀 Banana Galaxy</b><br>Ghost bananas, meteors and Bruno's UFO</td>
+    <td align="center"><img src="screenshots/banana-bunch.jpg" alt="Eating the banana bunch at the top" width="250"><br><b>¡Ñam!</b><br>Eating the whole bunch at the top</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/scoreboard.jpg" alt="Online scoreboard" width="250"><br><b>🏆 Online scoreboard</b><br>Shared across every device<br><sub>(example names)</sub></td>
+    <td colspan="2"></td>
+  </tr>
+</table>
+
+---
+
 ## 🚀 Features
 
 - **🐒🐶👧 3 climbers** – Gorilla, Dog, or **PomPom** (an 8-year-old girl with curly hair and two pom-poms).
@@ -53,6 +74,7 @@ Plays in any browser on **phones, tablets and computers**, and can be installed 
 | `firestore.rules` | Scoreboard security: anyone can read; entries can only be created or raised (never lowered or deleted); names 2–12 characters, scores up to 200,000, levels up to 30. Deploy with `npx firebase-tools deploy --only firestore:rules --project gonebananas-c8808`. |
 | `tests/play-test.js` | A robot that plays every level 20 times to check each level can be beaten. |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Home-screen install and offline play. |
+| `screenshots/` | The pictures in this README (phone size). |
 | `tools/make_icons.py` | Draws the app icon (crazy monkey hugging a banana). Run `python tools/make_icons.py` after changing it. |
 | `.github/workflows/pages.yml` | Runs the robot test, then publishes the game to GitHub Pages on every push to `main`. |
 
