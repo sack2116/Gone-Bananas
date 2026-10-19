@@ -154,6 +154,49 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
   box-shadow: 0 0.18em 0 var(--ink);
 }
 
+/* ---------- Name and scoreboard ---------- */
+.who {
+  font-size: 1em;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 0.1em 0 var(--ink);
+  text-decoration: underline dotted;
+}
+#name-input {
+  width: 100%;
+  padding: 0.45em 0.7em;
+  font: inherit;
+  font-size: 1.5em;
+  font-weight: 700;
+  text-align: center;
+  color: var(--ink);
+  background: #fff;
+  border: 0.14em solid var(--ink);
+  border-radius: 0.6em;
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: auto;
+}
+#name-input:focus { outline: 0.15em solid var(--yellow); }
+.msg { min-height: 1.2em; margin: 0; font-weight: 700; color: #d6337a; }
+.board { width: 100%; margin: 0; padding: 0; list-style: none; }
+.board li {
+  display: grid;
+  grid-template-columns: 2em 1fr auto auto;
+  gap: 0.5em;
+  align-items: center;
+  padding: 0.35em 0.5em;
+  font-weight: 700;
+  border-radius: 0.6em;
+}
+.board li:nth-child(odd) { background: rgba(59, 35, 20, 0.07); }
+.board li.me { background: var(--yellow); }
+.board .rank { font-size: 1.15em; text-align: center; }
+.board .who-name { overflow: hidden; text-align: left; white-space: nowrap; text-overflow: ellipsis; }
+.board .lvl { padding: 0.05em 0.5em; font-size: 0.85em; background: #b8f08f; border-radius: 999px; }
+.board .lvl.space { color: #fff; background: #6a35b8; }
+.board .pts { min-width: 4.5em; text-align: right; }
+
 /* ---------- How to play ---------- */
 .how { margin: 0; padding: 0; list-style: none; text-align: left; font-size: 1.02em; line-height: 1.35; }
 .how li { margin: 0.35em 0; }

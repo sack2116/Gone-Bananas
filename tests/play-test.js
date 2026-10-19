@@ -27,6 +27,7 @@ Object.defineProperty(global, 'localStorage', { value: { getItem: () => null, se
 
 const run = f => new Function(fs.readFileSync(path.join(__dirname, '..', 'js', f), 'utf8')).call(global);
 run('levels.js');
+run('online.js');
 run('game.js');
 const { game, player, input, startLevel, update, STEP } = global.__GB;
 

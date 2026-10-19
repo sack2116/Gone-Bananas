@@ -39,13 +39,40 @@
       <img class="mascot" src="icons/icon.svg" alt="">
       <h1 class="logo"><span>Gone</span><span>Bananas!!!</span></h1>
       <button class="btn big primary" data-go="chars">▶ Play</button>
-      <button class="btn ghost" data-go="how">How to play</button>
+      <div class="row">
+        <button class="btn small ghost" data-go="board">🏆 Scoreboard</button>
+        <button class="btn small ghost" data-go="how">How to play</button>
+      </div>
+      <button id="who" class="who" data-act="rename"></button>
       <div class="row">
         <button class="btn small ghost" data-toggle="sound"></button>
         <button class="btn small ghost" data-toggle="music"></button>
       </div>
       <p class="note">Best score: <b id="best">0</b></p>
       <p class="copy">© 2026 Isaac D. · Made for PomPom</p>
+    </section>
+
+    <!-- Sign up with a name (used on the scoreboard, whatever climber you pick) -->
+    <section id="scr-name" class="screen dim hidden">
+      <div class="panel">
+        <h2>What's your name?</h2>
+        <p class="note">Your name goes on the 🏆 scoreboard. Use the same name on the phone, tablet or computer.</p>
+        <input id="name-input" type="text" maxlength="12" autocomplete="nickname" autocapitalize="words" spellcheck="false" placeholder="PomPom">
+        <p id="name-msg" class="msg"></p>
+        <button class="btn big green primary" data-act="save-name">Let's go! ▶</button>
+        <button class="btn small ghost" data-act="skip-name">Play without a name</button>
+      </div>
+    </section>
+
+    <!-- Scoreboard -->
+    <section id="scr-board" class="screen dim hidden">
+      <div class="panel">
+        <h2>🏆 Scoreboard</h2>
+        <p class="note">Best score and highest level beaten, on every device.</p>
+        <ol id="board-list" class="board"></ol>
+        <p id="board-msg" class="msg"></p>
+        <button class="btn primary" data-go="title">◀ Back</button>
+      </div>
     </section>
 
     <!-- How to play -->
@@ -138,6 +165,7 @@
   </div>
 
   <script src="js/levels.js"></script>
+  <script src="js/online.js"></script>
   <script src="js/game.js"></script>
   <script>
     if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {

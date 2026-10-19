@@ -20,7 +20,7 @@
   /* ---------------- Saved progress (this device only) ---------------- */
   const SAVE_KEY = 'gone-bananas-v1';
   const save = Object.assign(
-    { unlocked: 1, stars: {}, best: 0, character: 'pompom', sound: true, music: true },
+    { unlocked: 1, stars: {}, best: 0, character: 'pompom', sound: true, music: true, playerName: '', nameSkipped: false, pending: null },
     readSave()
   );
   function readSave() {
@@ -693,6 +693,7 @@
     save.unlocked = Math.max(save.unlocked, Math.min(MAX_LEVEL, n + 1));
     save.best = Math.max(save.best, game.score);
     writeSave();
+    reportScore(game.score);
     Sound.stopMusic();
     Sound.sfx('win');
     game.coconuts = [];
@@ -708,6 +709,7 @@
     game.state = 'over';
     save.best = Math.max(save.best, game.score);
     writeSave();
+    reportScore(game.score);
     Sound.stopMusic();
     Sound.sfx('over');
     $('#o-text').textContent = `You reached level ${game.level} with ${game.score} points.`;
@@ -1183,13 +1185,83 @@
   document.querySelectorAll('.screen').forEach(el => { screens[el.id.replace('scr-', '')] = el; });
   let current = null;
   function show(name) {
+    // Ask for a name the first time someone plays (only when the online scoreboard is set up).
+    if (name === 'chars' && Online.ready() && !save.playerName && !save.nameSkipped) { nameNext = 'chars'; name = 'name'; }
     for (const k in screens) screens[k].classList.toggle('hidden', k !== name);
     current = name;
     if (name === 'levels') buildLevelGrid();
-    if (name === 'title') $('#best').textContent = save.best;
+    if (name === 'title') {
+      $('#best').textContent = save.best;
+      const who = $('#who');
+      who.textContent = save.playerName ? `Playing as ${save.playerName} ✏️` : 'Add your name for the scoreboard ✏️';
+      who.classList.toggle('hidden', !Online.ready());
+    }
+    if (name === 'board') loadBoard();
+    if (name === 'name') {
+      const box = $('#name-input');
+      box.value = save.playerName; $('#name-msg').textContent = '';
+      setTimeout(() => box.focus(), 50);
+    }
     const inGame = !name && game.state !== 'menu';
     $('#btn-pause').classList.toggle('hidden', !inGame);
     $('#touch').classList.toggle('hidden', !(inGame && touchMode));
+  }
+
+  /* ---------------- Player name and online scoreboard ---------------- */
+  const Online = window.GBOnline;
+  let nameNext = 'title';
+
+  async function saveName() {
+    const name = Online.cleanName($('#name-input').value);
+    const problem = Online.checkName(name);
+    if (problem) { $('#name-msg').textContent = problem; return; }
+    save.playerName = name; save.nameSkipped = false; writeSave();
+    Sound.sfx('click');
+    show(nameNext);
+    // Same name on another device = same player: say hi and send this device's best too.
+    try {
+      const old = await Online.getPlayer(name);
+      if (old && current === 'title') $('#who').textContent = `Welcome back, ${old.name}! ✏️`;
+    } catch (e) { /* offline: fine */ }
+    reportScore();
+  }
+
+  const highestBeaten = () => Object.keys(save.stars).reduce((m, k) => Math.max(m, +k), 0);
+
+  // Sends the best score and highest level beaten. If it fails (no internet) it is kept and retried later.
+  function reportScore(runScore) {
+    if (!Online.ready() || !save.playerName) return;
+    const p = save.pending || { score: 0, level: 0 };
+    save.pending = { score: Math.max(p.score, runScore || 0, save.best), level: Math.max(p.level, highestBeaten()) };
+    writeSave();
+    const sent = save.pending;
+    Online.submit({ name: save.playerName, score: sent.score, level: sent.level, character: save.character })
+      .then(() => { if (save.pending === sent) { save.pending = null; writeSave(); } })
+      .catch(() => { /* stays pending */ });
+  }
+
+  async function loadBoard() {
+    const list = $('#board-list'), msg = $('#board-msg');
+    list.innerHTML = '';
+    if (!Online.ready()) { msg.textContent = 'The online scoreboard is not set up yet.'; return; }
+    msg.textContent = 'Loading…';
+    try {
+      const rows = await Online.top(10);
+      msg.textContent = rows.length ? '' : 'No scores yet. Be the first!';
+      const medal = i => ['🥇', '🥈', '🥉'][i] || String(i + 1);
+      const icon = { gorilla: '🦍', dog: '🐶', pompom: '👧' };
+      const esc = s => s.replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+      list.innerHTML = rows.map((r, i) => {
+        const me = save.playerName && r.name.toLowerCase() === save.playerName.toLowerCase();
+        const space = r.bestLevel > LV.WORLD_SIZE;
+        return `<li class="${me ? 'me' : ''}"><span class="rank">${medal(i)}</span>` +
+          `<span class="who-name">${icon[r.character] || ''} ${esc(r.name)}</span>` +
+          `<span class="lvl ${space ? 'space' : ''}">${space ? '🚀' : '🌴'} ${r.bestLevel || '–'}</span>` +
+          `<span class="pts">${r.bestScore}</span></li>`;
+      }).join('');
+    } catch (e) {
+      msg.textContent = 'Can’t reach the scoreboard. Check the internet and try again.';
+    }
   }
 
   function buildCharCards() {
@@ -1311,6 +1383,9 @@
       case 'retry': Sound.sfx('click'); startLevel(game.level, true); break;
       case 'again': Sound.sfx('click'); startLevel(1, true); break;
       case 'continue': Sound.sfx('click'); startLevel(save.unlocked, true); break;
+      case 'rename': Sound.sfx('click'); nameNext = 'title'; show('name'); break;
+      case 'save-name': saveName(); break;
+      case 'skip-name': Sound.sfx('click'); save.nameSkipped = true; writeSave(); show(nameNext); break;
     }
   });
   $('#btn-pause').addEventListener('click', pause);
@@ -1324,6 +1399,10 @@
     ArrowUp: 'jump', w: 'jump', W: 'jump', ' ': 'jump',
   };
   window.addEventListener('keydown', e => {
+    if (e.target && e.target.tagName === 'INPUT') {   // typing a name: game keys are just letters here
+      if (e.key === 'Enter') saveName();
+      return;
+    }
     const k = KEYS[e.key];
     if (k || e.key === 'ArrowDown') e.preventDefault();
     if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') { game.paused ? resume() : pause(); return; }
@@ -1389,6 +1468,7 @@
 
   buildCharCards();
   syncToggles();
+  if (save.pending) reportScore();   // a score that couldn't be sent last time
   setupDemo();
   show('title');
   requestAnimationFrame(frame);

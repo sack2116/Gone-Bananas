@@ -1,0 +1,31 @@
+// Firestore security rules for the Gone Bananas!!! scoreboard.
+// Paste into Firebase console > Firestore Database > Rules, then Publish.
+// Anyone can read the scoreboard. A player's entry can be created or raised, never lowered or deleted.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /players/{playerId} {
+      allow read: if true;
+      allow create: if valid();
+      allow update: if valid()
+        && request.resource.data.bestScore >= resource.data.bestScore
+        && request.resource.data.bestLevel >= resource.data.bestLevel;
+      allow delete: if false;
+
+      function valid() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['name', 'bestScore', 'bestLevel', 'character', 'updated'])
+          && d.name is string && d.name.size() >= 2 && d.name.size() <= 12
+          && playerId == d.name.lower().replace(' ', '_')
+          && d.bestScore is int && d.bestScore >= 0 && d.bestScore <= 200000
+          && d.bestLevel is int && d.bestLevel >= 0 && d.bestLevel <= 30
+          && d.character in ['gorilla', 'dog', 'pompom']
+          && d.updated is timestamp;
+      }
+    }
+    // Nothing else in the database can be read or written.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
