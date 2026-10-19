@@ -45,6 +45,7 @@ body {
 
 /* ---------- Screens ---------- */
 .screen {
+  overflow-y: auto;
   position: absolute;
   inset: 0;
   display: flex;
@@ -201,12 +202,26 @@ button { font: inherit; color: inherit; cursor: pointer; border: none; backgroun
   border-radius: 0.9em;
   box-shadow: 0 0.2em 0 var(--ink);
 }
-.level-btn b { font-size: 1.6em; line-height: 1; }
+.level-btn b { font-size: 1.4em; line-height: 1; }
+.world-title {
+  grid-column: 1 / -1;
+  margin: 0.2em 0 0;
+  font-size: 1.1em;
+  color: #fff;
+  text-align: left;
+  text-shadow: 0 0.1em 0 var(--ink);
+}
+.world-title.space { color: #e6d6ff; }
 .level-btn .stars { font-size: 0.75em; color: #ff8c00; letter-spacing: -0.05em; }
 .level-btn .stars i { font-style: normal; color: rgba(59, 35, 20, 0.25); }
 .level-btn.slow { background: #b8f08f; }
 .level-btn.medium { background: #ffd08a; }
 .level-btn.fast { background: #ff9f9f; }
+.level-btn.space { color: #fff; background: #4b2c8f; border-color: #1a0d3d; box-shadow: 0 0.2em 0 #1a0d3d; }
+.level-btn.space.medium { background: #6a35b8; }
+.level-btn.space.fast { background: #8e3fd1; }
+.level-btn.space.locked { opacity: 0.55; box-shadow: none; }
+.level-btn.space .stars i { color: rgba(255, 255, 255, 0.3); }
 .level-btn.locked { background: rgba(255, 255, 255, 0.5); cursor: default; box-shadow: none; }
 .level-btn .lock { font-size: 1.3em; opacity: 0.7; }
 .legend { display: flex; gap: 0.5em; margin: 0; font-weight: 700; }

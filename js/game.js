@@ -88,18 +88,21 @@
     const MEL = [72, 0, 76, 79, 81, 79, 76, 0, 74, 76, 72, 0, 69, 72, 74, 0,
                  72, 0, 76, 79, 84, 81, 79, 76, 74, 72, 74, 76, 72, 0, 0, 0];
     const BASS = [48, 55, 48, 55, 45, 52, 45, 52, 41, 48, 41, 48, 43, 50, 43, 50];
+    let shift = 0, lead = 'square';
     function schedule() {
       while (nextAt < ac.currentTime + 0.15) {
         const m = MEL[step % MEL.length];
-        if (m) tone(midi(m), beat * 0.9, { vol: 0.5, at: nextAt, bus: musicBus });
-        if (step % 2 === 0) tone(midi(BASS[(step / 2) % BASS.length]), beat * 1.7, { type: 'triangle', vol: 0.9, at: nextAt, bus: musicBus });
+        if (m) tone(midi(m + shift), beat * 0.9, { type: lead, vol: lead === 'square' ? 0.5 : 0.8, at: nextAt, bus: musicBus });
+        if (step % 2 === 0) tone(midi(BASS[(step / 2) % BASS.length] + shift), beat * 1.7, { type: 'triangle', vol: 0.9, at: nextAt, bus: musicBus });
         nextAt += beat; step++;
       }
     }
     function music(level) {
       stopMusic();
       if (!save.music || !ready()) return;
-      beat = 60 / (118 + level * 5) / 2;   // the tune speeds up with the level
+      const space = level > LV.WORLD_SIZE;   // space: higher key and a softer, spacey lead
+      shift = space ? 5 : 0; lead = space ? 'triangle' : 'square';
+      beat = 60 / (118 + ((level - 1) % LV.WORLD_SIZE + 1) * 5 + (space ? 10 : 0)) / 2;   // the tune speeds up with the level
       step = 0; nextAt = ac.currentTime + 0.05;
       timer = setInterval(schedule, 50);
     }
@@ -282,6 +285,20 @@
     c.restore();
   }
 
+  // Space version of a coconut: a little flaming meteor.
+  function drawMeteor(c, x, y, r, rot) {
+    for (let i = 4; i >= 1; i--) {
+      c.globalAlpha = 0.18 * (5 - i);
+      circ(c, x + Math.sin(rot * 3 + i) * 2, y - i * r * 0.75, r * (1 - i * 0.12), i > 2 ? '#ff6b35' : '#ffd23f');
+    }
+    c.globalAlpha = 1;
+    c.save(); c.translate(x, y); c.rotate(rot);
+    circ(c, 0, 0, r, '#8d6e63');
+    c.strokeStyle = '#4e342e'; c.lineWidth = 1.5; c.beginPath(); c.arc(0, 0, r, 0, TAU); c.stroke();
+    for (const [dx, dy, cr] of [[-3, -3, 3], [4, 2, 2.4], [-2, 5, 1.8]]) circ(c, dx, dy, cr, '#5d4037');
+    c.restore();
+  }
+
   // The prize at the top: a whole bunch (racimo) of bananas, eaten one by one.
   const BUNCH = [
     [-14, -24, -0.8], [14, -24, 0.8],
@@ -314,6 +331,7 @@
     normal: { body: '#ffe14d', edge: '#c99a00' },
     rotten: { body: '#c9913e', edge: '#7a4f17' },
     rescue: { body: '#a6e35f', edge: '#4f8f22' },
+    ghost: { body: '#c8f7ff', edge: '#2f9fc4' },
     gold: { body: '#ffd700', edge: '#b8860b' },
   };
   function mixColor(a, b, t) {
@@ -400,7 +418,7 @@
 
   function tipLimit(b) {
     switch (b.type) {
-      case 'normal': return game.settings.tipTime;
+      case 'normal': case 'ghost': return game.settings.tipTime;
       case 'rotten': return game.settings.tipTime * 0.55;
       case 'rescue': return 3.5;
       default: return 0;   // ground and goal never drop
@@ -519,6 +537,8 @@
         if (!b.creaked && b.stood > limit * 0.6) { b.creaked = true; Sound.sfx('creak'); }
         if (b.stood >= limit) { tipBanana(b); p.on = null; p.coyote = 0.06; }
       }
+      // a ghost banana fading out lets you fall through
+      if (p.on && b.type === 'ghost' && !LV.ghostSolid(b, game.clock)) { p.on = null; p.coyote = 0.06; }
     }
 
     if (p.stun > 0) p.stun -= dt;
@@ -528,7 +548,7 @@
 
     // Balancing: the banana tips toward the side you stand on and you slide that way.
     // Stand near the middle, or push the other way, to stay on.
-    if (p.on && (p.on.type === 'normal' || p.on.type === 'rotten' || p.on.type === 'rescue')) {
+    if (p.on && (p.on.type === 'normal' || p.on.type === 'ghost' || p.on.type === 'rotten' || p.on.type === 'rescue')) {
       const b = p.on, off = clamp((p.x - b.x) / (b.w / 2), -1, 1);
       const most = game.settings.maxTilt * (b.type === 'rescue' ? 0.5 : 1);
       b.tilt += (off * most - b.tilt) * Math.min(1, dt * 5);
@@ -540,7 +560,7 @@
     if (input.jumpBuffer > 0) input.jumpBuffer -= dt;
     if (p.on) p.coyote = 0.1; else p.coyote -= dt;
     if (input.jumpBuffer > 0 && p.coyote > 0) {
-      p.vy = -PHYS.jumpV; p.on = null; p.coyote = 0; input.jumpBuffer = 0; p.squash = -0.25;
+      p.vy = -game.settings.jumpV; p.on = null; p.coyote = 0; input.jumpBuffer = 0; p.squash = -0.25;
       game.started = true;
       Sound.sfx('jump');
     }
@@ -551,11 +571,11 @@
       if (Math.abs(p.x - p.on.x) > p.on.w / 2 + p.halfW * 0.4) { p.on = null; game.started = true; }   // walked or slid off the edge
       else p.y = p.on.y + (p.x - p.on.x) * Math.sin(p.on.tilt || 0);   // follow the tipped surface
     } else {
-      p.vy = Math.min(p.vy + PHYS.gravity * dt, 1400);
+      p.vy = Math.min(p.vy + game.settings.gravity * dt, 1400);
       p.y += p.vy * dt;
       if (p.vy >= 0) {
         for (const b of game.bananas) {
-          if (b.state !== 'ok') continue;
+          if (b.state !== 'ok' || (b.type === 'ghost' && !LV.ghostSolid(b, game.clock))) continue;
           if (prevY <= b.y + 1 && p.y >= b.y && Math.abs(p.x - b.x) <= b.w / 2 + p.halfW * 0.5) { land(b); break; }
         }
       }
@@ -590,7 +610,7 @@
     const target = player.y - H * 0.58;
     if (target < game.camY) game.camY += (target - game.camY) * Math.min(1, dt * 5);
     if (game.scrollHold > 0) game.scrollHold -= dt;
-    else if (game.started && game.settings.scroll) game.camY -= game.settings.scroll * dt;
+    else if ((game.started || game.settings.scrollAlways) && game.settings.scroll) game.camY -= game.settings.scroll * dt;
     game.camY = Math.max(game.camY, game.goal.y - 230);
   }
 
@@ -788,9 +808,60 @@
     ctx.restore();
   }
 
+  const inSpace = () => game.state !== 'menu' && game.settings.space;
+
+  // World 2 sky: drifting nebulas, two layers of moving stars, planets and shooting stars.
+  const PLANETS = [
+    { x: 370, y: 140, r: 44, col: '#ff9f43', dark: '#c4691b', ring: true },
+    { x: 85, y: 720, r: 28, col: '#4dd0e1', dark: '#2595a5', ring: false },
+    { x: 330, y: 1250, r: 58, col: '#b388ff', dark: '#7c4dce', ring: false },
+  ];
+  function drawSpaceBackground(climb) {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#07041f'); g.addColorStop(0.6, '#1c0c45'); g.addColorStop(1, '#371563');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    const neb = ['#ff5fa2', '#36d1dc', '#b388ff', '#ffd23f'];
+    for (let i = 0; i < 4; i++) {
+      const span = H + 700;
+      const y = (((i * 420 + climb * 0.08 + game.clock * 4) % span) + span) % span - 350;
+      ctx.globalAlpha = 0.14;
+      circ(ctx, (i * 173) % W, y, 170, neb[i]);
+      circ(ctx, (i * 173 + 90) % W, y + 60, 110, neb[(i + 1) % 4]);
+    }
+    // the galaxy keeps flowing past, even when you stand still
+    for (const [n, par, size, drift] of [[70, 0.12, 1.1, 12], [40, 0.4, 1.9, 40]]) {
+      for (let i = 0; i < n; i++) {
+        const x = (i * 137.5 + size * 50) % W;
+        const y = (((i * 211.3 + climb * par + game.clock * drift) % H) + H) % H;
+        ctx.globalAlpha = 0.5 + 0.5 * Math.abs(Math.sin(game.clock * 2 + i));
+        circ(ctx, x, y, size, i % 7 === 0 ? '#ffe9a8' : '#ffffff');
+      }
+    }
+    ctx.globalAlpha = 1;
+    for (const p of PLANETS) {
+      const span = 1700;
+      const y = (((p.y + climb * 0.22 + game.clock * 6) % span) + span) % span - 200;
+      if (y < -120 || y > H + 120) continue;
+      if (p.ring) { ctx.strokeStyle = 'rgba(255,230,180,0.7)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(p.x, y, p.r * 1.8, p.r * 0.45, -0.35, Math.PI, TAU); ctx.stroke(); }
+      circ(ctx, p.x, y, p.r, p.col);
+      ctx.globalAlpha = 0.45; circ(ctx, p.x + p.r * 0.35, y + p.r * 0.2, p.r * 0.8, p.dark); ctx.globalAlpha = 1;
+      circ(ctx, p.x - p.r * 0.35, y - p.r * 0.35, p.r * 0.18, 'rgba(255,255,255,0.5)');
+      if (p.ring) { ctx.strokeStyle = 'rgba(255,230,180,0.7)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.ellipse(p.x, y, p.r * 1.8, p.r * 0.45, -0.35, 0, Math.PI); ctx.stroke(); }
+    }
+    // a shooting star every few seconds
+    const st = game.clock % 4.5;
+    if (st < 0.8) {
+      const k = Math.floor(game.clock / 4.5);
+      const sx = ((k * 211) % W) + st * 420, sy = 60 + ((k * 97) % 300) + st * 160;
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 2.5; ln(ctx, sx, sy, sx - 60, sy - 23);
+      circ(ctx, sx, sy, 2.5, '#fff');
+    }
+  }
+
   function drawBackground() {
-    const th = themeFor(game.state === 'menu' ? 1 : game.level);
     const climb = -game.camY - (H - 150);   // how far the camera has risen
+    if (inSpace()) { drawSpaceBackground(climb); return; }
+    const th = themeFor(game.state === 'menu' ? 1 : game.level);
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, th.top); g.addColorStop(1, th.bot);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
@@ -847,7 +918,8 @@
     // the banana tree trunk you are climbing
     const top = game.goal ? game.goal.y : -2000;
     const t0 = Math.max(top, game.camY - 20), t1 = Math.min(0, game.camY + H + 20);
-    if (t1 > t0) {
+    const space = inSpace();
+    if (t1 > t0 && !space) {
       ctx.fillStyle = 'rgba(139, 90, 43, 0.8)';
       ctx.fillRect(W / 2 - 34, t0, 68, t1 - t0);
       ctx.fillStyle = 'rgba(255, 220, 160, 0.18)';
@@ -858,7 +930,15 @@
       }
     }
     // ground
-    if (game.camY + H > -20) {
+    if (game.camY + H > -20 && space) {
+      // moon surface with craters
+      ctx.fillStyle = '#a7a9c4'; ctx.fillRect(0, 0, W, 400);
+      ctx.fillStyle = '#c9cbe0'; ctx.fillRect(0, 0, W, 6);
+      for (const [cx, cy, r] of [[60, 40, 22], [190, 70, 14], [300, 35, 28], [420, 80, 18], [130, 130, 30], [360, 150, 24]]) {
+        ell(ctx, cx, cy, r, r * 0.45, '#8c8eab');
+        ell(ctx, cx, cy - 2, r * 0.8, r * 0.3, '#7a7c99');
+      }
+    } else if (game.camY + H > -20) {
       ctx.fillStyle = '#5bb35a'; ctx.fillRect(0, 0, W, 400);
       ctx.fillStyle = '#4a9a49'; ctx.fillRect(0, 26, W, 400);
       ctx.fillStyle = '#7fd36f';
@@ -866,15 +946,30 @@
     }
     // leafy crown and the top banana bunch
     if (game.goal) {
-      const gy = game.goal.y, final = game.settings.level === MAX_LEVEL && game.state !== 'menu';
-      for (let i = 0; i < 7; i++) {
-        const a = -Math.PI + (i / 6) * Math.PI;
-        ell(ctx, W / 2 + Math.cos(a) * 95, gy - 20 + Math.sin(a) * 55, 70, 20, i % 2 ? '#3d9e52' : '#4cb35f', a);
+      const gy = game.goal.y, final = game.settings.final && game.state !== 'menu';
+      if (space) {
+        // Banana Space Station: antenna, metal deck with blinking lights, rocket flames underneath
+        ctx.strokeStyle = '#cfd8dc'; ctx.lineWidth = 5; ln(ctx, W / 2 - 80, gy, W / 2 - 80, gy - 95);
+        circ(ctx, W / 2 - 80, gy - 98, 6, Math.sin(game.clock * 6) > 0 ? '#ff4d6d' : '#7ed957');
+        ctx.fillStyle = '#e8eef2'; ctx.beginPath(); ctx.ellipse(W / 2 - 80, gy - 70, 22, 9, -0.5, 0, Math.PI); ctx.fill();
+        for (const fx of [-60, 60]) {
+          const f = 18 + Math.sin(game.clock * 30 + fx) * 5;
+          ctx.fillStyle = '#ffb347'; ctx.beginPath(); ctx.moveTo(W / 2 + fx - 12, gy + 16); ctx.lineTo(W / 2 + fx, gy + 16 + f * 1.6); ctx.lineTo(W / 2 + fx + 12, gy + 16); ctx.fill();
+          ctx.fillStyle = '#fff3b0'; ctx.beginPath(); ctx.moveTo(W / 2 + fx - 6, gy + 16); ctx.lineTo(W / 2 + fx, gy + 16 + f); ctx.lineTo(W / 2 + fx + 6, gy + 16); ctx.fill();
+        }
+        ctx.fillStyle = '#b0bec5'; rr(ctx, W / 2 - 108, gy - 1, 216, 18, 6); ctx.fill();
+        ctx.lineWidth = 3; ctx.strokeStyle = '#546e7a'; ctx.stroke();
+        for (let i = 0; i < 7; i++) circ(ctx, W / 2 - 90 + i * 30, gy + 8, 3.5, (i + Math.floor(game.clock * 4)) % 3 ? '#4dd0e1' : '#ffd23f');
+      } else {
+        for (let i = 0; i < 7; i++) {
+          const a = -Math.PI + (i / 6) * Math.PI;
+          ell(ctx, W / 2 + Math.cos(a) * 95, gy - 20 + Math.sin(a) * 55, 70, 20, i % 2 ? '#3d9e52' : '#4cb35f', a);
+        }
+        // the branch you land on, and the banana bunch (racimo) waiting on it
+        ctx.fillStyle = '#8b5a2b'; rr(ctx, W / 2 - 108, gy - 1, 216, 16, 8); ctx.fill();
+        ctx.lineWidth = 3; ctx.strokeStyle = '#5b3a1a'; ctx.stroke();
+        ell(ctx, W / 2 - 112, gy + 4, 22, 9, '#4cb35f', -0.3); ell(ctx, W / 2 + 112, gy + 4, 22, 9, '#4cb35f', 0.3);
       }
-      // the branch you land on, and the banana bunch (racimo) waiting on it
-      ctx.fillStyle = '#8b5a2b'; rr(ctx, W / 2 - 108, gy - 1, 216, 16, 8); ctx.fill();
-      ctx.lineWidth = 3; ctx.strokeStyle = '#5b3a1a'; ctx.stroke();
-      ell(ctx, W / 2 - 112, gy + 4, 22, 9, '#4cb35f', -0.3); ell(ctx, W / 2 + 112, gy + 4, 22, 9, '#4cb35f', 0.3);
       if (final) {
         ctx.globalAlpha = 0.35 + 0.25 * Math.sin(game.clock * 4);
         circ(ctx, W / 2 + 25, gy - 60, 85, '#fff6a0');
@@ -898,7 +993,14 @@
       ctx.translate(b.x, b.y + (b.state === 'ok' && player.on === b ? 2 : 0));
       ctx.rotate(wob + b.rot + (b.tilt || 0));
       if (b.type === 'rescue') { ctx.globalAlpha = 0.35; circ(ctx, 0, 6, b.w * 0.45, '#ffffff'); ctx.globalAlpha = 1; }
+      if (space) { ctx.globalAlpha = 0.28; ell(ctx, 0, 6, b.w * 0.62, 17, b.type === 'ghost' ? '#36d1dc' : '#b388ff'); ctx.globalAlpha = 1; }
+      if (b.type === 'ghost') {
+        // solid for 2 s, flickers as a warning, then see-through for 1 s
+        const ph = (game.clock + b.blink) % LV.GHOST.period;
+        ctx.globalAlpha = ph >= LV.GHOST.solid ? 0.2 : ph > LV.GHOST.solid - 0.5 ? 0.55 + 0.45 * Math.sin(game.clock * 40) : 1;
+      }
       drawBanana(ctx, b.w, BANANA_LOOK[b.type] || BANANA_LOOK.normal, f * 0.85, b.type === 'rotten' || f > 0.5);
+      ctx.globalAlpha = 1;
       ctx.restore();
     }
     // coins
@@ -909,15 +1011,30 @@
     // the climber
     if (game.state !== 'dying' && game.state !== 'over') drawPlayer();
     // Bruno and his coconuts
-    for (const cn of game.coconuts) drawCoconut(ctx, cn.x, cn.y, 11, cn.rot);
+    for (const cn of game.coconuts) {
+      if (space) drawMeteor(ctx, cn.x, cn.y, 12, cn.rot); else drawCoconut(ctx, cn.x, cn.y, 11, cn.rot);
+    }
     const v = game.villain;
     if (v && game.state !== 'menu' && v.y > game.camY - 80) {
-      ctx.strokeStyle = '#2f8a4c'; ctx.lineWidth = 4;
-      ln(ctx, v.x - 7, game.camY - 10, v.x - 7, v.y - 70);
+      if (!space) {
+        ctx.strokeStyle = '#2f8a4c'; ctx.lineWidth = 4;
+        ln(ctx, v.x - 7, game.camY - 10, v.x - 7, v.y - 70);
+      }
       ctx.save(); ctx.translate(v.x, v.y + Math.sin(game.clock * 2) * 4);
       ctx.rotate(Math.sin(game.clock * 2) * 0.08);
       ctx.scale(1.5, 1.5);
+      if (space) {   // Bruno's UFO: glass dome behind him, saucer in front
+        ctx.globalAlpha = 0.3; circ(ctx, 0, -28, 30, '#bdf3ff'); ctx.globalAlpha = 1;
+        ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, -28, 30, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+      }
       drawBaboon(ctx, { t: game.clock, windup: v.windup, flee: game.state === 'complete' });
+      if (space) {
+        ell(ctx, 0, -2, 40, 11, '#90a4ae'); ell(ctx, 0, -5, 40, 7, '#cfd8dc');
+        for (let i = -2; i <= 2; i++) circ(ctx, i * 15, -1, 2.6, (i + Math.floor(game.clock * 6)) % 2 ? '#ffd23f' : '#ff5fa2');
+        ctx.globalAlpha = 0.25 + 0.15 * Math.sin(game.clock * 8);
+        ctx.fillStyle = '#7ef9ff'; ctx.beginPath(); ctx.moveTo(-14, 8); ctx.lineTo(14, 8); ctx.lineTo(24, 40); ctx.lineTo(-24, 40); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
       ctx.restore();
       if (v.windup > 0) label('!', v.x - 40, v.y - 40, 36 + Math.sin(game.clock * 20) * 4, '#ff4d4d');
     }
@@ -954,6 +1071,13 @@
       air: !p.on || party,
       blink: game.clock % 3.3 < 0.12,
     });
+    if (inSpace()) {   // space helmet
+      ctx.globalAlpha = 0.2; circ(ctx, 0, -38, 23, '#bdf3ff'); ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, -38, 23, 0, TAU); ctx.stroke();
+      ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, -38, 17, Math.PI * 1.15, Math.PI * 1.45); ctx.stroke();
+      ctx.fillStyle = '#90a4ae'; rr(ctx, -12, -17, 24, 4, 2); ctx.fill();
+    }
     ctx.restore();
   }
 
@@ -972,7 +1096,7 @@
     // level and speed
     label(`LEVEL ${s.level}`, 282, 25, 21, '#ffd23f');
     const sc = s.speed === 'Slow' ? '#7ed957' : s.speed === 'Medium' ? '#ffb347' : '#ff6b6b';
-    label(s.speed.toUpperCase(), 282, 50, 14, sc);
+    label((s.space ? 'SPACE · ' : '') + s.speed.toUpperCase(), 282, 50, 14, sc);
     // time and score
     const secs = Math.floor(game.time);
     label(`${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, 378, 25, 18, '#fff');
@@ -1000,7 +1124,8 @@
       ctx.lineWidth = 5; ctx.strokeStyle = INK; ctx.stroke();
       label(`LEVEL ${s.level}`, W / 2, cy - 78, 48, '#ffd23f');
       const icon = s.speed === 'Slow' ? '🐢' : s.speed === 'Medium' ? '🐇' : '🚀';
-      label(`${icon} ${s.speed} speed`, W / 2, cy - 32, 22, s.speed === 'Slow' ? '#3f9e4a' : s.speed === 'Medium' ? '#e07b00' : '#e03131', null);
+      label(`${icon} ${s.space ? 'Banana Galaxy · ' : ''}${s.speed} speed`, W / 2, cy - 32, 22,
+        s.space ? '#7c4dce' : s.speed === 'Slow' ? '#3f9e4a' : s.speed === 'Medium' ? '#e07b00' : '#e03131', null);
       const tip = s.tip || CHEERS[s.level % CHEERS.length];
       const lines = wrapText(tip, W / 2, cy + 6, W - 150, 18, INK);
       if (s.level > 1) label(`${CHAR.name} grew bigger!`, W / 2, cy + 22 + lines * 22, 17, '#ff5fa2', null);
@@ -1099,10 +1224,18 @@
     const grid = $('#level-grid');
     grid.innerHTML = '';
     for (let n = 1; n <= MAX_LEVEL; n++) {
+      if ((n - 1) % LV.WORLD_SIZE === 0) {
+        const w = LV.worldOf(n);
+        const h = document.createElement('h3');
+        h.className = 'world-title' + (w === 2 ? ' space' : '');
+        h.textContent = w === 2 ? '🚀 World 2 · Banana Galaxy' : '🌴 World 1 · Jungle';
+        grid.appendChild(h);
+      }
       const locked = n > save.unlocked;
       const stars = save.stars[n] || 0;
+      const k = (n - 1) % LV.WORLD_SIZE + 1;
       const b = document.createElement('button');
-      b.className = `level-btn ${n <= 5 ? 'slow' : n <= 10 ? 'medium' : 'fast'}` + (locked ? ' locked' : '');
+      b.className = `level-btn ${k <= 5 ? 'slow' : k <= 10 ? 'medium' : 'fast'}` + (n > LV.WORLD_SIZE ? ' space' : '') + (locked ? ' locked' : '');
       b.disabled = locked;
       b.innerHTML = locked ? '<span class="lock">🔒</span>' :
         `<b>${n}</b><span class="stars">${'★'.repeat(stars)}<i>${'★'.repeat(3 - stars)}</i></span>`;
@@ -1114,11 +1247,13 @@
   function showComplete() {
     const n = game.level;
     if (n === MAX_LEVEL) {
-      $('#w-text').textContent = `${CHAR.name} climbed all ${MAX_LEVEL} banana trees with ${game.score} points!`;
+      $('#w-text').textContent = `${CHAR.name} climbed the whole jungle AND the Banana Galaxy with ${game.score} points!`;
       show('win');
       return;
     }
-    $('#c-title').textContent = `Level ${n} complete!`;
+    const worldDone = n === LV.WORLD_SIZE;
+    $('#c-title').textContent = worldDone ? 'Jungle complete! 🎉' : `Level ${n} complete!`;
+    $('#c-next').textContent = worldDone ? 'Blast off to space 🚀' : 'Next level ▶';
     $('#c-cheer').textContent = `${CHAR.name}: “${CHAR.cheer}”`;
     $('#c-stars').innerHTML = [0, 1, 2].map(i =>
       `<span class="star ${game.starList[i] ? 'on' : ''}" style="animation-delay:${0.2 + i * 0.25}s">★</span>`).join('');

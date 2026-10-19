@@ -4,11 +4,14 @@
   'use strict';
 
   const W = 480;            // game world width (height adapts to the screen)
-  const MAX_LEVEL = 15;
+  const WORLD_SIZE = 15;                // levels per world
+  const MAX_LEVEL = 30;                 // World 1: the Jungle (1-15), World 2: the Banana Galaxy (16-30)
+  const WORLDS = ['Jungle', 'Banana Galaxy'];
 
   // Shared with the game so every generated level stays reachable.
-  // Jump height = jumpV^2 / (2 * gravity) = about 195 px.
+  // Jungle jump height = jumpV^2 / (2 * gravity) = about 195 px. Space is floatier (about 220 px).
   const PHYS = { gravity: 1900, jumpV: 860, runSpeed: 260 };
+  const SPACE = { gravity: 1900 * 0.7, jumpV: 860 * 0.9 };
 
   const lerp = (a, b, t) => a + (b - a) * t;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -22,15 +25,59 @@
     6: 'Medium speed! The screen climbs by itself now. Keep up!',
     9: 'New! Spotty brown bananas drop extra fast.',
     11: 'Fast speed! Only banana pros make it this far!',
-    15: 'FINAL LEVEL! Climb all the way to the Golden Banana!',
+    15: 'Last jungle level! Climb all the way to the Golden Bananas!',
+    16: 'Welcome to the BANANA GALAXY! You float in space, and the screen never stops climbing!',
+    17: 'Bruno got a UFO! Dodge his flaming space meteors!',
+    21: 'New! Ghost bananas blink in and out. Only land on them while they glow!',
+    26: 'Fast speed in space! Hold on to your helmet!',
+    30: 'FINAL LEVEL! Reach the Banana Space Station!',
   };
+
+  const worldOf = n => (n > WORLD_SIZE ? 2 : 1);
 
   function levelSettings(n) {
     n = clamp(Math.round(n) || 1, 1, MAX_LEVEL);
-    const t = (n - 1) / (MAX_LEVEL - 1);   // 0 at level 1, 1 at level 15
+    return n > WORLD_SIZE ? spaceSettings(n) : jungleSettings(n);
+  }
+
+  // World 2: always scrolling, floaty jumps, sliding and ghost bananas everywhere.
+  function spaceSettings(n) {
+    const u = (n - WORLD_SIZE - 1) / (WORLD_SIZE - 1);   // 0 at level 16, 1 at level 30
+    const k = n - WORLD_SIZE;                           // 1..15 inside this world
+    const bananas = Math.round(lerp(22, 32, u));
+    return {
+      level: n, world: 2, space: true, final: n === MAX_LEVEL,
+      speed: k <= 5 ? 'Slow' : k <= 10 ? 'Medium' : 'Fast',
+      gravity: SPACE.gravity, jumpV: SPACE.jumpV,
+      bananas,
+      gapY: lerp(118, 148, u),
+      gapX: lerp(140, 180, u),
+      bananaW: Math.round(lerp(110, 84, u)),
+      tipTime: +lerp(1.6, 0.8, u).toFixed(2),
+      maxTilt: +lerp(0.2, 0.34, u).toFixed(3),
+      villain: true,
+      throwEvery: +lerp(3.2, 1.4, u).toFixed(2),
+      doubleThrow: k >= 6,
+      moving: lerp(0.4, 0.75, u),
+      moveSpeed: lerp(70, 130, u),
+      rotten: lerp(0.12, 0.25, u),
+      ghost: k >= 6 ? lerp(0.15, 0.3, (k - 6) / 9) : 0,   // bananas that blink in and out
+      scroll: Math.round(lerp(40, 75, u)),
+      scrollAlways: true,                                  // moves even before your first jump
+      coinChance: 0.55,
+      growth: +(1.42 + 0.005 * k).toFixed(3),
+      parTime: Math.round(bananas * 1.2),
+      tip: TIPS[n] || null,
+    };
+  }
+
+  function jungleSettings(n) {
+    const t = (n - 1) / (WORLD_SIZE - 1);   // 0 at level 1, 1 at level 15
     const bananas = Math.round(lerp(16, 28, t));
     return {
-      level: n,
+      level: n, world: 1, space: false, final: n === WORLD_SIZE,
+      gravity: PHYS.gravity, jumpV: PHYS.jumpV,
+      ghost: 0, scrollAlways: false,
       speed: n <= 5 ? 'Slow' : n <= 10 ? 'Medium' : 'Fast',
       bananas,                                       // bananas between the ground and the top
       gapY: lerp(100, 132, t),                       // how far up the next banana is
@@ -84,10 +131,12 @@
         amp = Math.min(25 + rand() * 30, nx - margin, W - margin - nx);
         if (amp < 15) amp = 0;
       }
-      const type = i >= 3 && rand() < s.rotten ? 'rotten' : 'normal';
+      const r = rand();
+      const type = i >= 3 && r < s.rotten ? 'rotten' : i >= 2 && r < s.rotten + s.ghost ? 'ghost' : 'normal';
       bananas.push({
         x: nx, y: ny, w: s.bananaW, type,
         amp: Math.round(amp), phase: rand() * Math.PI * 2, speed: amp ? s.moveSpeed : 0,
+        blink: rand() * 3,   // where a ghost banana starts in its blink cycle
       });
 
       if (rand() < s.coinChance) {
@@ -108,7 +157,11 @@
     return { settings: s, bananas, coins, goal, height: -goal.y };
   }
 
-  const api = { W, MAX_LEVEL, PHYS, TIPS, levelSettings, buildLevel, mulberry32 };
+  // Ghost bananas: solid (and glowing) for 2 s, then see-through for 1 s.
+  const GHOST = { period: 3, solid: 2 };
+  const ghostSolid = (b, clock) => ((clock + b.blink) % GHOST.period) < GHOST.solid;
+
+  const api = { W, WORLD_SIZE, MAX_LEVEL, WORLDS, PHYS, TIPS, GHOST, worldOf, ghostSolid, levelSettings, buildLevel, mulberry32 };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.GBLevels = api;
 })(this);

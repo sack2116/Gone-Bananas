@@ -1,6 +1,6 @@
 // Lets the game install to a phone/tablet home screen and keep working offline.
 // Network first, so a new version on GitHub Pages shows up as soon as there is internet.
-const CACHE = 'gone-bananas-v1';
+const CACHE = 'gone-bananas-v2';
 const FILES = [
   './', 'index.html', 'style.css', 'js/levels.js', 'js/game.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',

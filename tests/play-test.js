@@ -37,6 +37,7 @@ function bot() {
   if (player.on || !botTarget || botTarget.state !== 'ok') {
     for (const b of game.bananas) {
       if (b.state !== 'ok' || b.y >= (player.on ? player.on.y : player.y) - 10) continue;
+      if (b.type === 'ghost' && !global.GBLevels.ghostSolid(b, game.clock + 0.6)) continue;
       if (!target || b.y > target.y) target = b;
     }
     botTarget = target;
@@ -63,7 +64,7 @@ if (process.env.TRACE) {
 }
 
 let failures = 0;
-for (let n = 1; n <= 15; n++) {
+for (let n = 1; n <= global.GBLevels.MAX_LEVEL; n++) {
   const runs = 20;
   let wins = 0, falls = 0, totalTime = 0;
   for (let r = 0; r < runs; r++) {
