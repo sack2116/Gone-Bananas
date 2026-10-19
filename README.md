@@ -41,7 +41,9 @@ Plays in any browser on **phones, tablets and computers**, and can be installed 
 - **⏳ Ripening bananas** – the banana you stand on wobbles, turns brown and drops. Jump in time or you fall!
 - **🐒 Bruno the Bad Baboon** – from level 3, the villain swings along the top of the screen, follows you and throws coconuts. A red **!** shows he's about to throw. A hit knocks you off your banana (BONK!). He throws faster in later levels, and sometimes two at once from level 12.
 - **🍌🍌🍌 A whole banana bunch at the top** – reach the top and your climber eats the racimo one banana at a time (¡Ñam!) while Bruno runs off grumbling.
-- **❤️ 3 lives** – if you fall, you lose a life and a green rescue banana catches you so you can keep going.
+- **❤️ 3 lives** – if you fall, you lose a life and a green rescue banana catches you so you can keep going. Once you've reached a banana, landing back on the ground also counts as a fall, so you can never get stuck at the bottom with the low bananas gone.
+- **☁️ Emergency jump** – one mid-air jump per life, only while falling. If a banana drops out from under you, press JUMP in the air to bounce back up. The cloud icon next to the hearts shows whether it's still available, and a "Press JUMP!" hint appears the first time you lose your footing in a level.
+- **⏱ Countdown on every level** – about 48–56 seconds in the jungle and 53–64 in space. The clock turns red and ticks in the last 10 seconds. If it runs out, **you keep your points** (they still count for the scoreboard), but the level isn't finished and the next one doesn't unlock. No life is lost, and **Try again** replays the level.
 - **🪙 Coins worth 1, 2 or 5** – every **20 coin points** gives an extra life.
 - **📏 Your climber grows** a little bigger every level.
 - **⭐ Up to 3 stars per level** – reach the top, don't fall, and grab most of the coins. **PERFECT!** bonus for landing in the middle of a banana, and a speed bonus for finishing fast.

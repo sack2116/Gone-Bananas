@@ -67,6 +67,7 @@
       coinChance: 0.55,
       growth: +(1.42 + 0.005 * k).toFixed(3),
       parTime: Math.round(bananas * 1.2),
+      timeLimit: Math.round(bananas * lerp(2.4, 2.0, u)),   // countdown: seconds to reach the top (about 53 to 64)
       tip: TIPS[n] || null,
     };
   }
@@ -95,6 +96,7 @@
       coinChance: 0.55,
       growth: +(1 + 0.03 * (n - 1)).toFixed(2),      // the climber grows a little every level
       parTime: Math.round(bananas * 1.25),           // finish faster than this for a time bonus
+      timeLimit: Math.round(bananas * lerp(3.0, 2.0, t)),   // countdown: seconds to reach the top (about 48 to 56)
       tip: TIPS[n] || null,
     };
   }

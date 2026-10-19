@@ -79,6 +79,8 @@
         case 'throw': tone(520, 0.18, { type: 'triangle', vol: 0.12, slide: -280 }); break;
         case 'bonk': tone(200, 0.12, { vol: 0.16, slide: -120 }); tone(90, 0.2, { type: 'triangle', vol: 0.25, delay: 0.03 }); break;
         case 'chomp': tone(rnd(200, 260), 0.06, { vol: 0.12, slide: -80 }); tone(150, 0.05, { type: 'triangle', vol: 0.15, delay: 0.08 }); break;
+        case 'tick': tone(1200, 0.05, { type: 'square', vol: 0.06 }); break;
+        case 'airjump': tone(420, 0.25, { type: 'triangle', vol: 0.16, slide: 700 }); tone(880, 0.12, { type: 'triangle', vol: 0.08, delay: 0.1 }); break;
         case 'grr': tone(120, 0.45, { type: 'sawtooth', vol: 0.08, slide: -40 }); break;
         case 'click': tone(660, 0.06, { type: 'triangle', vol: 0.12 }); break;
       }
@@ -408,7 +410,7 @@
   };
   const player = {
     x: W / 2, y: 0, vx: 0, vy: 0, on: null, facing: 1, scale: 1,
-    squash: 0, coyote: 0, invuln: 0, lastOn: null, slide: 0, stun: 0,
+    squash: 0, coyote: 0, invuln: 0, lastOn: null, slide: 0, stun: 0, airJump: true,
     get halfW() { return 13 * this.scale; },
   };
   let CHAR = charById(save.character);
@@ -444,12 +446,12 @@
     Object.assign(game, {
       state: 'intro', paused: false, levelCoins: 0, fell: false, particles: [], popups: [],
       time: 0, introT: 0, goT: 9, deadT: 0, doneT: 0, shake: 0, started: false, scrollHold: 1.5, shownDone: false,
-      coconuts: [], eaten: 0,
+      coconuts: [], eaten: 0, climbed: false, hinted: false,
       villain: game.settings.villain ? { x: W * 0.75, y: 0, off: 0, throwT: 2.5, windup: 0 } : null,
     });
     Object.assign(player, {
       x: W / 2, y: 0, vx: 0, vy: 0, on: game.bananas[0], facing: 1,
-      scale: game.settings.growth, squash: 0, coyote: 0, invuln: 0, lastOn: game.bananas[0], slide: 0, stun: 0,
+      scale: game.settings.growth, squash: 0, coyote: 0, invuln: 0, lastOn: game.bananas[0], slide: 0, stun: 0, airJump: true,
     });
     input.jumpBuffer = 0;
     game.camY = -(H - 150);
@@ -508,9 +510,20 @@
     burst(b.x, b.y + 6, 8, ['#ffe14d', '#c99a00', '#5b3a1a'], { speed: 120 });
   }
 
+  // The first time you lose your footing in a level, remind them about the emergency jump.
+  function hintAirJump() {
+    if (game.hinted || !player.airJump) return;
+    game.hinted = true;
+    popup(player.x, player.y - 80 * player.scale, 'Press JUMP!', '#7ef9ff', 26);
+  }
+
   function land(b) {
     const p = player;
+    // Once you've climbed onto a banana, dropping back to the ground counts as a fall.
+    // (Otherwise, with the low bananas gone, there'd be no way back up.)
+    if (b.type === 'ground' && game.climbed) { die(); return; }
     p.on = b; p.y = b.y; p.vy = 0; p.squash = 0.3; p.slide = 0;
+    if (b.type !== 'ground') game.climbed = true;
     if (b.type === 'goal') { levelComplete(); return; }
     Sound.sfx('land');
     burst(p.x, p.y, 5, ['#fff6c8', '#e9d9a8'], { speed: 70, up: 20, g: 200, size: 0.8 });
@@ -535,10 +548,10 @@
       if (limit) {
         b.stood += dt;
         if (!b.creaked && b.stood > limit * 0.6) { b.creaked = true; Sound.sfx('creak'); }
-        if (b.stood >= limit) { tipBanana(b); p.on = null; p.coyote = 0.06; }
+        if (b.stood >= limit) { tipBanana(b); p.on = null; p.coyote = 0.06; hintAirJump(); }
       }
       // a ghost banana fading out lets you fall through
-      if (p.on && b.type === 'ghost' && !LV.ghostSolid(b, game.clock)) { p.on = null; p.coyote = 0.06; }
+      if (p.on && b.type === 'ghost' && !LV.ghostSolid(b, game.clock)) { p.on = null; p.coyote = 0.06; hintAirJump(); }
     }
 
     if (p.stun > 0) p.stun -= dt;
@@ -563,12 +576,22 @@
       p.vy = -game.settings.jumpV; p.on = null; p.coyote = 0; input.jumpBuffer = 0; p.squash = -0.25;
       game.started = true;
       Sound.sfx('jump');
+    } else if (input.jumpBuffer > 0 && !p.on && p.vy > 150 && p.airJump && p.stun <= 0) {
+      // Emergency jump: one per life, only while falling (e.g. the banana dropped under you)
+      p.airJump = false;
+      p.vy = -game.settings.jumpV; input.jumpBuffer = 0; p.squash = -0.3;
+      burst(p.x, p.y + 4, 14, ['#ffffff', '#e3f6ff', '#c9ecff'], { speed: 140, up: -40, g: 60, size: 1.6, life: 0.8 });
+      popup(p.x, p.y - 70 * p.scale, 'Emergency jump!', '#7ef9ff', 22);
+      Sound.sfx('airjump');
     }
 
     const prevY = p.y;
     p.x = clamp(p.x + p.vx * dt, p.halfW, W - p.halfW);
     if (p.on) {
-      if (Math.abs(p.x - p.on.x) > p.on.w / 2 + p.halfW * 0.4) { p.on = null; game.started = true; }   // walked or slid off the edge
+      if (Math.abs(p.x - p.on.x) > p.on.w / 2 + p.halfW * 0.4) {   // walked or slid off the edge
+        if (p.on.type !== 'ground') hintAirJump();
+        p.on = null; game.started = true;
+      }
       else p.y = p.on.y + (p.x - p.on.x) * Math.sin(p.on.tilt || 0);   // follow the tipped surface
     } else {
       p.vy = Math.min(p.vy + game.settings.gravity * dt, 1400);
@@ -671,7 +694,7 @@
     const y = Math.round(game.camY + H * 0.62);
     const r = { x: W / 2, baseX: W / 2, y, w: 140, type: 'rescue', amp: 0, phase: 0, speed: 0, stood: 0, state: 'ok', vy: 0, rot: 0, spin: 0, dx: 0, tilt: 0, creaked: false };
     game.bananas.push(r);
-    Object.assign(player, { x: W / 2, y, vx: 0, vy: 0, on: r, lastOn: r, invuln: 1.5, squash: 0.3, slide: 0, stun: 0 });
+    Object.assign(player, { x: W / 2, y, vx: 0, vy: 0, on: r, lastOn: r, invuln: 1.5, squash: 0.3, slide: 0, stun: 0, airJump: true });
     game.coconuts = [];
     input.jumpBuffer = 0;
     game.scrollHold = 1.2;
@@ -716,6 +739,19 @@
     show('over');
   }
 
+  // The countdown ran out: the level isn't finished (nothing unlocks), but the points earned are kept.
+  function timeUp() {
+    game.state = 'timeup';
+    save.best = Math.max(save.best, game.score);
+    writeSave();
+    reportScore(game.score);
+    Sound.stopMusic();
+    Sound.sfx('over');
+    $('#t-text').textContent = (game.score ? `You keep your ${game.score} points! ` : '') +
+      `Reach the top before the clock hits 0:00 to finish level ${game.level}.`;
+    show('timeup');
+  }
+
   function update(dt) {
     game.clock += dt;
     if (game.shake > 0) game.shake -= dt;
@@ -735,8 +771,12 @@
         game.introT += dt;
         if (game.introT >= INTRO_TIME) { game.state = 'playing'; game.goT = 0; Sound.sfx('go'); }
         break;
-      case 'playing':
+      case 'playing': {
+        const before = game.settings.timeLimit - game.time;
         game.time += dt; game.goT += dt;
+        const left = game.settings.timeLimit - game.time;
+        if (left <= 10 && Math.ceil(left) !== Math.ceil(before)) Sound.sfx('tick');   // last 10 seconds tick
+        if (left <= 0) { timeUp(); break; }
         updatePlayer(dt);
         if (game.state !== 'playing') break;   // reached the top this step
         collectCoins();
@@ -745,6 +785,7 @@
         updateCoconuts(dt);
         if (player.y - game.camY > H + 40) die();
         break;
+      }
       case 'dying':
         game.deadT += dt;
         if (game.deadT > 1.2) { if (game.lives <= 0) gameOver(); else respawn(); }
@@ -1089,6 +1130,16 @@
     // lives
     if (game.lives <= 5) for (let i = 0; i < game.lives; i++) heart(24 + i * 25, 25, 21, '#ff4d6d');
     else { heart(24, 25, 21, '#ff4d6d'); label('x' + game.lives, 40, 26, 18, '#fff', INK, 'left'); }
+    // emergency jump: bright cloud while you still have it, faded once used
+    {
+      const ex = 26 + Math.min(game.lives, 5) * 25 + (game.lives > 5 ? 30 : 0), ey = 25;
+      ctx.globalAlpha = player.airJump ? 1 : 0.28;
+      for (const [dx, dy, r] of [[-7, 3, 6], [0, -1, 8], [8, 3, 6]]) circ(ctx, ex + dx, ey + dy, r, '#ffffff');
+      ctx.fillStyle = '#2f9fc4';
+      ctx.beginPath(); ctx.moveTo(ex, ey - 7); ctx.lineTo(ex + 5, ey); ctx.lineTo(ex + 2, ey); ctx.lineTo(ex + 2, ey + 6);
+      ctx.lineTo(ex - 2, ey + 6); ctx.lineTo(ex - 2, ey); ctx.lineTo(ex - 5, ey); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
     // coins toward the next extra life
     drawCoin(ctx, 22, 51, 1, 0, 0.75);
     ctx.fillStyle = 'rgba(255,255,255,0.3)'; rr(ctx, 36, 45, 100, 12, 6); ctx.fill();
@@ -1099,9 +1150,11 @@
     label(`LEVEL ${s.level}`, 282, 25, 21, '#ffd23f');
     const sc = s.speed === 'Slow' ? '#7ed957' : s.speed === 'Medium' ? '#ffb347' : '#ff6b6b';
     label((s.space ? 'SPACE · ' : '') + s.speed.toUpperCase(), 282, 50, 14, sc);
-    // time and score
-    const secs = Math.floor(game.time);
-    label(`${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, 378, 25, 18, '#fff');
+    // countdown and score (the clock turns red and pulses in the last 10 seconds)
+    const left = Math.max(0, Math.ceil(s.timeLimit - game.time));
+    const hurry = left <= 10 && game.state === 'playing';
+    label(`⏱ ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`, 378, 25,
+      hurry ? 20 + Math.abs(Math.sin(game.clock * 6)) * 3 : 18, hurry ? '#ff5f5f' : '#fff');
     label(String(game.score), 378, 50, 15, '#fff');
 
     // climb progress on the right edge
@@ -1383,6 +1436,7 @@
       case 'retry': Sound.sfx('click'); startLevel(game.level, true); break;
       case 'again': Sound.sfx('click'); startLevel(1, true); break;
       case 'continue': Sound.sfx('click'); startLevel(save.unlocked, true); break;
+      case 'replay': Sound.sfx('click'); startLevel(game.level, false); break;   // keeps points and lives
       case 'rename': Sound.sfx('click'); nameNext = 'title'; show('name'); break;
       case 'save-name': saveName(); break;
       case 'skip-name': Sound.sfx('click'); save.nameSkipped = true; writeSave(); show(nameNext); break;

@@ -67,21 +67,22 @@ if (process.env.TRACE) {
 let failures = 0;
 for (let n = 1; n <= global.GBLevels.MAX_LEVEL; n++) {
   const runs = 20;
-  let wins = 0, falls = 0, totalTime = 0;
+  let wins = 0, falls = 0, totalTime = 0, slowest = 0;
   for (let r = 0; r < runs; r++) {
     startLevel(n, true);
     game.lives = 99;
     let t = 0;
-    while (t < 120 && game.state !== 'complete' && game.state !== 'over') {
+    while (t < 120 && !['complete', 'over', 'timeup'].includes(game.state)) {
       if (game.state === 'playing') bot();
       if (game.state === 'dying' && game.deadT === 0) falls++;
       update(STEP); t += STEP;
     }
-    if (game.state === 'complete') { wins++; totalTime += game.time; }
+    if (game.state === 'complete') { wins++; totalTime += game.time; slowest = Math.max(slowest, game.time); }
   }
   const s = game.settings;
   const line = `Level ${String(n).padStart(2)} (${s.speed.padEnd(6)}): bot won ${wins}/${runs}, ` +
-    `falls/run ${(falls / runs).toFixed(1)}, avg climb ${(totalTime / Math.max(1, wins)).toFixed(1)}s, size x${s.growth}`;
+    `falls/run ${(falls / runs).toFixed(1)}, avg climb ${(totalTime / Math.max(1, wins)).toFixed(1)}s ` +
+    `(slowest ${slowest.toFixed(0)}s of ${s.timeLimit}s), size x${s.growth}`;
   console.log(line);
   if (wins < runs * 0.8) failures++;
 }
@@ -109,6 +110,61 @@ for (const [n, off] of [[1, 0], [1, 0.6], [15, 0], [15, 0.6]]) {
   console.log(`Level ${n}, standing ${off ? 'near the end' : 'in the middle'}: ${why}`);
   if (off && !why.startsWith('slid')) failures++;
   if (!off && why.startsWith('slid')) failures++;
+}
+
+// Stuck case (bug report): on a slow level, the first bananas drop and you land back on the ground.
+// That must cost a life and put you back up on a rescue banana, never leave you stuck.
+{
+  startLevel(1, true);
+  game.state = 'playing'; game.villain = null; game.started = true;
+  input.kLeft = input.kRight = false; input.jumpBuffer = 0;
+  const [b1, b2] = game.bananas.filter(x => x.type === 'normal');
+  game.climbed = true;
+  b1.state = b2.state = 'falling';
+  Object.assign(player, { on: null, x: b1.x, y: b1.y, vx: 0, vy: 0, airJump: false });
+  const livesBefore = game.lives;
+  let t = 0;
+  while (game.state === 'playing' && t < 5) { update(STEP); t += STEP; }
+  const died = game.state === 'dying' && game.lives === livesBefore - 1;
+  for (let i = 0; i < 200; i++) update(STEP);
+  const rescued = game.state === 'playing' && player.on && player.on.type === 'rescue' && player.airJump;
+  const s = game.settings, reach = (s.jumpV * s.jumpV) / (2 * s.gravity) * 0.9;
+  const next = game.bananas.some(b => b.state === 'ok' && b.type !== 'ground' && b !== player.on && b.y < player.y && player.y - b.y < reach);
+  console.log(`Fell back to the ground after climbing: life lost ${died ? 'yes' : 'NO'}, back on a rescue banana ${rescued ? 'yes' : 'NO'}, next banana in reach ${next ? 'yes' : 'NO'}`);
+  if (!died || !rescued || !next) failures++;
+
+  // Hopping on the ground before reaching the first banana is free.
+  startLevel(1, true);
+  game.state = 'playing'; game.villain = null;
+  const l0 = game.lives;
+  input.jumpBuffer = 0.15;
+  for (let i = 0; i < 150; i++) update(STEP);
+  console.log(`Hop on the ground before climbing: ${game.lives === l0 && game.state === 'playing' ? 'free' : 'LIFE LOST'}`);
+  if (game.lives !== l0 || game.state !== 'playing') failures++;
+
+  // Emergency jump: works once while falling, then not again until a new life.
+  startLevel(5, true);
+  game.state = 'playing'; game.villain = null;
+  Object.assign(player, { on: null, x: 240, y: -500, vx: 0, vy: 400, airJump: true });
+  input.jumpBuffer = 0.15; update(STEP);
+  const first = player.vy < 0 && !player.airJump;
+  player.vy = 400; input.jumpBuffer = 0.15; update(STEP);
+  const second = player.vy < 0;
+  console.log(`Emergency jump: first ${first ? 'works' : 'FAILED'}, second ${second ? 'ALSO WORKED' : 'blocked'}`);
+  if (!first || second) failures++;
+}
+
+// Countdown: when time runs out the points are kept, the level is not finished, and no life is lost.
+{
+  startLevel(4, true);
+  game.state = 'playing'; game.villain = null;
+  game.score = 345;
+  const lives0 = game.lives;
+  game.time = game.settings.timeLimit - 0.005;
+  update(STEP);
+  const kept = game.state === 'timeup' && game.score === 345 && game.lives === lives0;
+  console.log(`Clock runs out: ${kept ? 'Time’s up, points kept, no life lost' : 'WRONG (state ' + game.state + ')'}`);
+  if (!kept) failures++;
 }
 
 // Running out of lives ends the game.
