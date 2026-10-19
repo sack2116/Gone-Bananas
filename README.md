@@ -14,7 +14,10 @@ Plays in any browser on **phones, tablets and computers**, and can be installed 
   - 🐢 **Levels 1–5 · Slow** – learn to hop. Sliding bananas start at level 4.
   - 🐇 **Levels 6–10 · Medium** – the screen climbs by itself, so you have to keep up. Spotty brown bananas that drop extra fast start at level 9.
   - 🚀 **Levels 11–15 · Fast** – smaller, quicker bananas. Level 15 ends at the **Golden Banana**.
-- **🍌 Wobbly bananas** – the banana you stand on wobbles, turns brown and drops. Jump in time or you fall!
+- **🍌 Balancing bananas** – a banana tips toward the side you stand on, and you slide toward the edge. Stand in the middle or push the other way. Bananas tip further in later levels.
+- **⏳ Ripening bananas** – the banana you stand on wobbles, turns brown and drops. Jump in time or you fall!
+- **🐒 Bruno the Bad Baboon** – from level 3, the villain swings along the top of the screen, follows you and throws coconuts. A red **!** shows he's about to throw. A hit knocks you off your banana (BONK!). He throws faster in later levels, and sometimes two at once from level 12.
+- **🍌🍌🍌 A whole banana bunch at the top** – reach the top and your climber eats the racimo one banana at a time (¡Ñam!) while Bruno runs off grumbling.
 - **❤️ 3 lives** – if you fall, you lose a life and a green rescue banana catches you so you can keep going.
 - **🪙 Coins worth 1, 2 or 5** – every **20 coin points** gives an extra life.
 - **📏 Your climber grows** a little bigger every level.

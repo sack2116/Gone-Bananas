@@ -15,9 +15,9 @@
 
   // Shown on the "Level N" card. Levels without a tip get a random cheer.
   const TIPS = {
-    1: 'Hop from banana to banana! A banana wobbles and drops if you stay on it too long.',
+    1: 'Hop from banana to banana! Stay near the middle: bananas tip, and they drop if you stay too long.',
     2: 'Grab coins! Every 20 coin points gives you an extra life.',
-    3: 'Land right in the middle of a banana for a PERFECT bonus!',
+    3: 'Uh-oh! Bruno the Bad Baboon guards the bananas. Dodge his coconuts!',
     4: 'New! Some bananas slide from side to side.',
     6: 'Medium speed! The screen climbs by itself now. Keep up!',
     9: 'New! Spotty brown bananas drop extra fast.',
@@ -36,7 +36,11 @@
       gapY: lerp(100, 132, t),                       // how far up the next banana is
       gapX: lerp(120, 175, t),                       // how far sideways it can be
       bananaW: Math.round(lerp(124, 88, t)),         // bananas get smaller
-      tipTime: +lerp(2.4, 0.9, t).toFixed(2),        // seconds a banana holds you before it drops
+      tipTime: +lerp(2.1, 0.8, t).toFixed(2),        // seconds a banana holds you before it drops
+      maxTilt: +lerp(0.12, 0.34, t).toFixed(3),      // how far a banana tips when you stand near its end (radians)
+      villain: n >= 3,                               // Bruno the Bad Baboon throws coconuts
+      throwEvery: n >= 3 ? +lerp(4.2, 1.6, (n - 3) / 12).toFixed(2) : 0,
+      doubleThrow: n >= 12,                          // sometimes two coconuts at once
       moving: n >= 4 ? lerp(0.25, 0.65, (n - 4) / 11) : 0,  // share of sliding bananas
       moveSpeed: lerp(45, 110, t),
       rotten: n >= 9 ? lerp(0.12, 0.3, (n - 9) / 6) : 0,    // share of fast-dropping brown bananas

@@ -76,6 +76,10 @@
         case 'go': tone(523, 0.12, { vol: 0.1 }); tone(784, 0.25, { vol: 0.1, delay: 0.12 }); break;
         case 'win': notes([523, 659, 784, 1047, 784, 1047], { vol: 0.1, dur: 0.16, gap: 0.11 }); break;
         case 'over': notes([392, 330, 262, 196], { type: 'triangle', vol: 0.18, dur: 0.3, gap: 0.2 }); break;
+        case 'throw': tone(520, 0.18, { type: 'triangle', vol: 0.12, slide: -280 }); break;
+        case 'bonk': tone(200, 0.12, { vol: 0.16, slide: -120 }); tone(90, 0.2, { type: 'triangle', vol: 0.25, delay: 0.03 }); break;
+        case 'chomp': tone(rnd(200, 260), 0.06, { vol: 0.12, slide: -80 }); tone(150, 0.05, { type: 'triangle', vol: 0.15, delay: 0.08 }); break;
+        case 'grr': tone(120, 0.45, { type: 'sawtooth', vol: 0.08, slide: -40 }); break;
         case 'click': tone(660, 0.06, { type: 'triangle', vol: 0.12 }); break;
       }
     }
@@ -237,6 +241,67 @@
     smile(c, 0, -33, 3, '#7a2e2e', 1.4);
   }
 
+  // Bruno the Bad Baboon: grumpy, colorful face, swings on a vine and throws coconuts.
+  // a = { t, windup: 0..1 (arm raised), flee: bool }
+  function drawBaboon(c, a) {
+    const FUR = '#6f6a8f', FUR_D = '#4e4a6b', BELLY = '#a9a3c6';
+    c.lineCap = 'round';
+    // vine hand above the head
+    c.strokeStyle = FUR; c.lineWidth = 7;
+    ln(c, -10, -30, -6, -60); circ(c, -6, -61, 5, FUR_D);
+    // throwing arm: down, or raised with a coconut
+    if (a.windup > 0) {
+      ln(c, 12, -28, 22, -52); drawCoconut(c, 24, -58, 10, a.t * 2);
+    } else ln(c, 12, -26, 18, -8);
+    ell(c, 0, -16, 15, 16, FUR);
+    ell(c, 0, -13, 9, 10, BELLY);
+    c.strokeStyle = FUR; c.lineWidth = 7;
+    const kick = Math.sin(a.t * (a.flee ? 20 : 4)) * 3;
+    ln(c, -6, -4, -9, 6 + kick); ln(c, 6, -4, 9, 6 - kick);
+    circ(c, 0, -38, 14, FUR);
+    circ(c, -14, -40, 4.5, FUR_D); circ(c, 14, -40, 4.5, FUR_D);
+    for (let i = -2; i <= 2; i++) circ(c, i * 4, -51 + Math.abs(i) * 1.5, 3.5, FUR_D);   // messy hair
+    ell(c, 0, -34, 9.5, 10.5, '#f2d5a3');
+    ell(c, -6.5, -33, 3, 6, '#4d7cff'); ell(c, 6.5, -33, 3, 6, '#4d7cff');   // blue cheeks
+    ell(c, 0, -32, 3.5, 7.5, '#e63946');                                       // red nose
+    circ(c, -4.5, -42, 2.8, '#ffd23f'); circ(c, 4.5, -42, 2.8, '#ffd23f');     // yellow eyes
+    circ(c, -4, -41.5, 1.3, '#1b1b1b'); circ(c, 5, -41.5, 1.3, '#1b1b1b');
+    c.strokeStyle = '#1b1b1b'; c.lineWidth = 2;
+    ln(c, -9, -47.5, -2, -44.5); ln(c, 9, -47.5, 2, -44.5);                  // angry eyebrows
+    c.fillStyle = '#5a1020'; rr(c, -6, -26, 12, 5, 2.5); c.fill();             // grumpy mouth
+    c.fillStyle = '#fff'; c.beginPath(); c.moveTo(-4, -26); c.lineTo(-2.5, -23.5); c.lineTo(-1, -26); c.fill();
+    c.beginPath(); c.moveTo(1, -26); c.lineTo(2.5, -23.5); c.lineTo(4, -26); c.fill();
+  }
+  function drawCoconut(c, x, y, r, rot) {
+    c.save(); c.translate(x, y); c.rotate(rot);
+    circ(c, 0, 0, r, '#6b4423');
+    c.strokeStyle = '#4a2c14'; c.lineWidth = 1.5; c.beginPath(); c.arc(0, 0, r, 0, TAU); c.stroke();
+    c.strokeStyle = '#8a5a33'; c.lineWidth = 1.2;
+    for (let i = 0; i < 5; i++) { const a = i * 1.3; ln(c, Math.cos(a) * r * 0.3, Math.sin(a) * r * 0.3, Math.cos(a) * r * 0.85, Math.sin(a) * r * 0.85); }
+    for (const [dx, dy] of [[-3, -3], [3, -3], [0, 2]]) circ(c, dx * r / 10, dy * r / 10, r * 0.15, '#2e1a0b');
+    c.restore();
+  }
+
+  // The prize at the top: a whole bunch (racimo) of bananas, eaten one by one.
+  const BUNCH = [
+    [-14, -24, -0.8], [14, -24, 0.8],
+    [-26, -48, -1.1], [0, -54, 0], [26, -48, 1.1],
+    [-30, -75, -1.2], [-11, -80, -0.5], [11, -80, 0.5], [30, -75, 1.2],
+    [-22, -100, -1.1], [-8, -105, -0.4], [8, -105, 0.4], [22, -100, 1.1],
+  ];
+  function drawBunch(c, x, y, eaten, gold) {
+    const look = gold ? BANANA_LOOK.gold : BANANA_LOOK.normal;
+    c.strokeStyle = '#6b4a1f'; c.lineWidth = 9; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x, y - 6); c.quadraticCurveTo(x + 6, y - 70, x - 2, y - 128); c.stroke();
+    for (let i = BUNCH.length - 1; i >= eaten; i--) {
+      const [dx, dy, rot] = BUNCH[i];
+      c.save(); c.translate(x + dx, y + dy); c.rotate(rot - Math.PI / 2 * Math.sign(rot) * 0.15);
+      drawBanana(c, 46, look, 0, false);
+      c.restore();
+    }
+    ell(c, x - 2, y - 130, 7, 5, '#4f3412');
+  }
+
   const CHARACTERS = [
     { id: 'gorilla', name: 'Gorilla', tag: 'Big, strong & silly', color: '#3a3542', cheer: 'Ooh-ooh-ah-ah!', draw: drawGorilla },
     { id: 'dog', name: 'Dog', tag: 'Waggy & happy', color: '#d9954f', cheer: 'Woof woof!', draw: drawDog },
@@ -319,12 +384,13 @@
     startLives: 3, startBank: 0, startScore: 0,
     levelCoins: 0, levelCoinTotal: 0, fell: false, stars: 0,
     bananas: [], coins: [], particles: [], popups: [], goal: null,
+    coconuts: [], villain: null, eaten: 0,
     camY: 0, clock: 0, time: 0, introT: 0, goT: 9, deadT: 0, doneT: 0, shake: 0,
     started: false, scrollHold: 0, shownDone: false,
   };
   const player = {
     x: W / 2, y: 0, vx: 0, vy: 0, on: null, facing: 1, scale: 1,
-    squash: 0, coyote: 0, invuln: 0, lastOn: null,
+    squash: 0, coyote: 0, invuln: 0, lastOn: null, slide: 0, stun: 0,
     get halfW() { return 13 * this.scale; },
   };
   let CHAR = charById(save.character);
@@ -344,7 +410,7 @@
   function loadLevelData(n, seed) {
     const lvl = LV.buildLevel(n, seed);
     game.settings = lvl.settings;
-    const plat = b => Object.assign({ baseX: b.x, amp: 0, phase: 0, speed: 0, stood: 0, state: 'ok', vy: 0, rot: 0, spin: 0, dx: 0, creaked: false }, b);
+    const plat = b => Object.assign({ baseX: b.x, amp: 0, phase: 0, speed: 0, stood: 0, state: 'ok', vy: 0, rot: 0, spin: 0, dx: 0, tilt: 0, creaked: false }, b);
     game.bananas = [plat({ x: W / 2, y: 0, w: W * 3, type: 'ground' })]
       .concat(lvl.bananas.map(plat), [plat(lvl.goal)]);
     game.goal = game.bananas[game.bananas.length - 1];
@@ -360,10 +426,12 @@
     Object.assign(game, {
       state: 'intro', paused: false, levelCoins: 0, fell: false, particles: [], popups: [],
       time: 0, introT: 0, goT: 9, deadT: 0, doneT: 0, shake: 0, started: false, scrollHold: 1.5, shownDone: false,
+      coconuts: [], eaten: 0,
+      villain: game.settings.villain ? { x: W * 0.75, y: 0, off: 0, throwT: 2.5, windup: 0 } : null,
     });
     Object.assign(player, {
       x: W / 2, y: 0, vx: 0, vy: 0, on: game.bananas[0], facing: 1,
-      scale: game.settings.growth, squash: 0, coyote: 0, invuln: 0, lastOn: game.bananas[0],
+      scale: game.settings.growth, squash: 0, coyote: 0, invuln: 0, lastOn: game.bananas[0], slide: 0, stun: 0,
     });
     input.jumpBuffer = 0;
     game.camY = -(H - 150);
@@ -397,6 +465,11 @@
   }
 
   /* ---------------- Physics and rules ---------------- */
+  const EAT_EVERY = 0.22;
+  const EAT_DONE = 0.5 + BUNCH.length * EAT_EVERY;
+  const BRUNO_LINES = ['Grrr! My bananas!', 'Not fair!', 'I’ll get you next time!', 'Nooo! My racimo!'];
+  const YUMS = ['¡Ñam!', 'Yum!', '¡Ñam ñam!', 'Mmm!', 'Chomp!'];
+
   function updatePlatforms(dt) {
     for (const b of game.bananas) {
       if (b.amp) {
@@ -404,6 +477,7 @@
         const nx = b.baseX + Math.sin(b.phase) * b.amp;
         b.dx = nx - b.x; b.x = nx;
       } else b.dx = 0;
+      if (b !== player.on && b.tilt) b.tilt *= 1 - Math.min(1, dt * 3);   // levels out again when empty
       if (b.state === 'falling') { b.vy += PHYS.gravity * 0.6 * dt; b.y += b.vy * dt; b.rot += b.spin * dt; }
     }
     // forget bananas that fell far off screen
@@ -418,7 +492,7 @@
 
   function land(b) {
     const p = player;
-    p.on = b; p.y = b.y; p.vy = 0; p.squash = 0.3;
+    p.on = b; p.y = b.y; p.vy = 0; p.squash = 0.3; p.slide = 0;
     if (b.type === 'goal') { levelComplete(); return; }
     Sound.sfx('land');
     burst(p.x, p.y, 5, ['#fff6c8', '#e9d9a8'], { speed: 70, up: 20, g: 200, size: 0.8 });
@@ -447,9 +521,21 @@
       }
     }
 
-    const dir = (input.kRight || input.tRight ? 1 : 0) - (input.kLeft || input.tLeft ? 1 : 0);
+    if (p.stun > 0) p.stun -= dt;
+    const dir = p.stun > 0 ? 0 : (input.kRight || input.tRight ? 1 : 0) - (input.kLeft || input.tLeft ? 1 : 0);
     if (dir) p.facing = dir;
     p.vx += (dir * PHYS.runSpeed - p.vx) * Math.min(1, dt * (p.on ? 16 : 9));
+
+    // Balancing: the banana tips toward the side you stand on and you slide that way.
+    // Stand near the middle, or push the other way, to stay on.
+    if (p.on && (p.on.type === 'normal' || p.on.type === 'rotten' || p.on.type === 'rescue')) {
+      const b = p.on, off = clamp((p.x - b.x) / (b.w / 2), -1, 1);
+      const most = game.settings.maxTilt * (b.type === 'rescue' ? 0.5 : 1);
+      b.tilt += (off * most - b.tilt) * Math.min(1, dt * 5);
+      p.slide = clamp(p.slide + Math.sin(b.tilt) * 1100 * dt, -320, 320);
+      if (dir && Math.sign(dir) !== Math.sign(p.slide)) p.slide -= Math.sign(p.slide) * Math.min(Math.abs(p.slide), 900 * dt);
+      p.x += p.slide * dt;
+    } else p.slide = 0;
 
     if (input.jumpBuffer > 0) input.jumpBuffer -= dt;
     if (p.on) p.coyote = 0.1; else p.coyote -= dt;
@@ -462,7 +548,8 @@
     const prevY = p.y;
     p.x = clamp(p.x + p.vx * dt, p.halfW, W - p.halfW);
     if (p.on) {
-      if (Math.abs(p.x - p.on.x) > p.on.w / 2 + p.halfW * 0.4) { p.on = null; game.started = true; }   // walked off the edge
+      if (Math.abs(p.x - p.on.x) > p.on.w / 2 + p.halfW * 0.4) { p.on = null; game.started = true; }   // walked or slid off the edge
+      else p.y = p.on.y + (p.x - p.on.x) * Math.sin(p.on.tilt || 0);   // follow the tipped surface
     } else {
       p.vy = Math.min(p.vy + PHYS.gravity * dt, 1400);
       p.y += p.vy * dt;
@@ -507,6 +594,53 @@
     game.camY = Math.max(game.camY, game.goal.y - 230);
   }
 
+  /* Bruno the Bad Baboon swings along the top of the screen, follows you and throws coconuts. */
+  function updateVillain(dt) {
+    const v = game.villain;
+    if (!v) return;
+    v.y = game.camY + 160 + v.off;
+    if (game.state === 'complete') { v.off -= 280 * dt; return; }   // runs away when you reach the top
+    const sp = (40 + game.settings.level * 7) * dt;
+    v.x += clamp(clamp(player.x, 40, W - 50) - v.x, -sp, sp);
+    if (v.windup > 0) {
+      v.windup -= dt;
+      if (v.windup <= 0) throwCoconut(v);
+    } else if (game.started && player.invuln <= 0) {
+      v.throwT -= dt;
+      if (v.throwT <= 0) { v.windup = 0.7; v.throwT = game.settings.throwEvery * rnd(0.8, 1.25); }
+    }
+  }
+  function throwCoconut(v) {
+    const n = game.settings.doubleThrow && Math.random() < 0.4 ? 2 : 1;
+    for (let i = 0; i < n; i++) {
+      const spread = n > 1 ? (i ? 70 : -70) : 0;
+      game.coconuts.push({
+        x: v.x + 22, y: v.y - 50, vx: clamp((player.x - v.x) * 0.6, -110, 110) + spread, vy: -60, rot: 0,
+      });
+    }
+    Sound.sfx('throw');
+  }
+  function updateCoconuts(dt) {
+    const p = player, cy = p.y - 24 * p.scale, reach = 10 + 13 * p.scale;
+    for (const cn of game.coconuts) {
+      cn.vy += 800 * dt; cn.x += cn.vx * dt; cn.y += cn.vy * dt; cn.rot += 7 * dt;
+      if (!cn.gone && game.state === 'playing' && p.invuln <= 0 && Math.hypot(cn.x - p.x, cn.y - cy) < reach) {
+        cn.gone = true;
+        bonk(cn);
+      }
+    }
+    game.coconuts = game.coconuts.filter(cn => !cn.gone && cn.y < game.camY + H + 60);
+  }
+  function bonk(cn) {
+    const p = player;
+    p.on = null; p.vy = 140; p.vx = (p.x < cn.x ? -1 : 1) * 200; p.slide = 0;
+    p.stun = 0.5; p.invuln = 0.9; p.coyote = 0;
+    game.shake = 0.2;
+    popup(p.x, p.y - 70 * p.scale, 'BONK!', '#ff9f43', 30);
+    burst(cn.x, cn.y, 12, ['#6b4423', '#fff', '#c58b5a'], { speed: 200 });
+    Sound.sfx('bonk');
+  }
+
   function die() {
     game.state = 'dying'; game.deadT = 0; game.fell = true; game.shake = 0.35;
     game.lives--;
@@ -515,9 +649,10 @@
 
   function respawn() {
     const y = Math.round(game.camY + H * 0.62);
-    const r = { x: W / 2, baseX: W / 2, y, w: 140, type: 'rescue', amp: 0, phase: 0, speed: 0, stood: 0, state: 'ok', vy: 0, rot: 0, spin: 0, dx: 0, creaked: false };
+    const r = { x: W / 2, baseX: W / 2, y, w: 140, type: 'rescue', amp: 0, phase: 0, speed: 0, stood: 0, state: 'ok', vy: 0, rot: 0, spin: 0, dx: 0, tilt: 0, creaked: false };
     game.bananas.push(r);
-    Object.assign(player, { x: W / 2, y, vx: 0, vy: 0, on: r, lastOn: r, invuln: 1.5, squash: 0.3 });
+    Object.assign(player, { x: W / 2, y, vx: 0, vy: 0, on: r, lastOn: r, invuln: 1.5, squash: 0.3, slide: 0, stun: 0 });
+    game.coconuts = [];
     input.jumpBuffer = 0;
     game.scrollHold = 1.2;
     game.state = 'playing';
@@ -540,6 +675,12 @@
     writeSave();
     Sound.stopMusic();
     Sound.sfx('win');
+    game.coconuts = [];
+    if (game.villain) {
+      const v = game.villain;
+      popup(v.x, v.y - 80, BRUNO_LINES[n % BRUNO_LINES.length], '#c9b8ff', 20);
+      setTimeout(() => Sound.sfx('grr'), 500);
+    }
     burst(player.x, player.y - 30, 40, ['#ff5fa2', '#ffd23f', '#7ed957', '#5cc8ff'], { speed: 320, kind: 'confetti', g: 300, life: 1.6 });
   }
 
@@ -578,6 +719,8 @@
         if (game.state !== 'playing') break;   // reached the top this step
         collectCoins();
         updateCamera(dt);
+        updateVillain(dt);
+        updateCoconuts(dt);
         if (player.y - game.camY > H + 40) die();
         break;
       case 'dying':
@@ -585,10 +728,26 @@
         if (game.deadT > 1.2) { if (game.lives <= 0) gameOver(); else respawn(); }
         break;
       case 'complete': {
+        // walk up to the banana bunch and eat it, one banana at a time
         game.doneT += dt;
-        player.squash = -Math.abs(Math.sin(game.doneT * 8)) * 0.15;
-        if (Math.random() < dt * 8) confetti();
-        if (game.doneT > 1.6 && !game.shownDone) { game.shownDone = true; showComplete(); }
+        updateVillain(dt);
+        updateCoconuts(dt);
+        const p = player, g = game.goal;
+        p.x += (g.x - 38 - p.x) * Math.min(1, dt * 6);
+        p.facing = 1;
+        const want = clamp(Math.floor((game.doneT - 0.5) / EAT_EVERY) + 1, 0, BUNCH.length);
+        while (game.eaten < want) {
+          game.eaten++;
+          const side = game.eaten % 2 ? -1 : 1;
+          popup(g.x + 25 + side * rnd(110, 150), g.y - rnd(40, 110), YUMS[game.eaten % YUMS.length], '#ffd23f', 26);
+          burst(g.x + 20, g.y - 60, 6, ['#ffe14d', '#fff6c8'], { speed: 120 });
+          Sound.sfx('chomp');
+        }
+        if (game.eaten >= BUNCH.length) {
+          player.squash = -Math.abs(Math.sin(game.doneT * 8)) * 0.15;
+          if (Math.random() < dt * 8) confetti();
+        }
+        if (game.doneT > EAT_DONE + 0.6 && !game.shownDone) { game.shownDone = true; showComplete(); }
         break;
       }
     }
@@ -712,22 +871,21 @@
         const a = -Math.PI + (i / 6) * Math.PI;
         ell(ctx, W / 2 + Math.cos(a) * 95, gy - 20 + Math.sin(a) * 55, 70, 20, i % 2 ? '#3d9e52' : '#4cb35f', a);
       }
-      ctx.save(); ctx.translate(W / 2, gy);
-      const look = final ? BANANA_LOOK.gold : BANANA_LOOK.normal;
-      for (const [ox, oy, w] of [[-60, 6, 100], [60, 6, 100], [0, 0, 130]]) {
-        ctx.save(); ctx.translate(ox, oy); drawBanana(ctx, w, look, 0, false); ctx.restore();
+      // the branch you land on, and the banana bunch (racimo) waiting on it
+      ctx.fillStyle = '#8b5a2b'; rr(ctx, W / 2 - 108, gy - 1, 216, 16, 8); ctx.fill();
+      ctx.lineWidth = 3; ctx.strokeStyle = '#5b3a1a'; ctx.stroke();
+      ell(ctx, W / 2 - 112, gy + 4, 22, 9, '#4cb35f', -0.3); ell(ctx, W / 2 + 112, gy + 4, 22, 9, '#4cb35f', 0.3);
+      if (final) {
+        ctx.globalAlpha = 0.35 + 0.25 * Math.sin(game.clock * 4);
+        circ(ctx, W / 2 + 25, gy - 60, 85, '#fff6a0');
+        ctx.globalAlpha = 1;
       }
-      ctx.restore();
+      drawBunch(ctx, W / 2 + 25, gy, game.state === 'menu' ? 0 : game.eaten, final);
       ctx.strokeStyle = INK; ctx.lineWidth = 4; ln(ctx, W / 2 + 92, gy, W / 2 + 92, gy - 70);
       ctx.fillStyle = final ? '#ffd700' : '#ff5fa2';
       ctx.beginPath(); ctx.moveTo(W / 2 + 92, gy - 70); ctx.lineTo(W / 2 + 140, gy - 58 + Math.sin(game.clock * 5) * 3);
       ctx.lineTo(W / 2 + 92, gy - 46); ctx.closePath(); ctx.fill();
       label(final ? 'WIN!' : 'TOP!', W / 2 + 110, gy - 58, 13, '#fff', INK);
-      if (final) {
-        ctx.globalAlpha = 0.35 + 0.25 * Math.sin(game.clock * 4);
-        circ(ctx, W / 2, gy - 10, 90, '#fff6a0');
-        ctx.globalAlpha = 1;
-      }
     }
     // bananas
     for (const b of game.bananas) {
@@ -738,7 +896,7 @@
       const wob = b.state === 'ok' ? Math.sin(game.clock * (8 + 14 * f)) * 0.13 * f : 0;
       ctx.save();
       ctx.translate(b.x, b.y + (b.state === 'ok' && player.on === b ? 2 : 0));
-      ctx.rotate(wob + b.rot);
+      ctx.rotate(wob + b.rot + (b.tilt || 0));
       if (b.type === 'rescue') { ctx.globalAlpha = 0.35; circ(ctx, 0, 6, b.w * 0.45, '#ffffff'); ctx.globalAlpha = 1; }
       drawBanana(ctx, b.w, BANANA_LOOK[b.type] || BANANA_LOOK.normal, f * 0.85, b.type === 'rotten' || f > 0.5);
       ctx.restore();
@@ -750,6 +908,19 @@
     }
     // the climber
     if (game.state !== 'dying' && game.state !== 'over') drawPlayer();
+    // Bruno and his coconuts
+    for (const cn of game.coconuts) drawCoconut(ctx, cn.x, cn.y, 11, cn.rot);
+    const v = game.villain;
+    if (v && game.state !== 'menu' && v.y > game.camY - 80) {
+      ctx.strokeStyle = '#2f8a4c'; ctx.lineWidth = 4;
+      ln(ctx, v.x - 7, game.camY - 10, v.x - 7, v.y - 70);
+      ctx.save(); ctx.translate(v.x, v.y + Math.sin(game.clock * 2) * 4);
+      ctx.rotate(Math.sin(game.clock * 2) * 0.08);
+      ctx.scale(1.5, 1.5);
+      drawBaboon(ctx, { t: game.clock, windup: v.windup, flee: game.state === 'complete' });
+      ctx.restore();
+      if (v.windup > 0) label('!', v.x - 40, v.y - 40, 36 + Math.sin(game.clock * 20) * 4, '#ff4d4d');
+    }
     // particles and floating text
     for (const pt of game.particles) {
       ctx.globalAlpha = clamp(pt.life / pt.max, 0, 1);
@@ -771,14 +942,16 @@
     const p = player;
     if (p.invuln > 0 && Math.floor(p.invuln * 12) % 2 === 0) return;
     let y = p.y;
-    if (game.state === 'complete') y -= Math.abs(Math.sin(game.doneT * 8)) * 18;
+    const party = game.state === 'complete' && game.eaten >= BUNCH.length;
+    if (party) y -= Math.abs(Math.sin(game.doneT * 8)) * 18;
+    else if (game.state === 'complete') y -= Math.abs(Math.sin(game.doneT * 14)) * 3;   // chewing
     ctx.save();
     ctx.translate(p.x, y);
     ctx.scale(p.scale * p.facing * (1 + p.squash * 0.6), p.scale * (1 - p.squash));
     CHAR.draw(ctx, {
       t: game.clock,
       run: p.on ? Math.min(1, Math.abs(p.vx) / PHYS.runSpeed) : 0,
-      air: !p.on || game.state === 'complete',
+      air: !p.on || party,
       blink: game.clock % 3.3 < 0.12,
     });
     ctx.restore();
@@ -848,8 +1021,8 @@
       const left = Math.max(0, game.lives);
       label(left ? `${left} ${left === 1 ? 'life' : 'lives'} left` : 'No lives left', W / 2, H * 0.38 + 56, 24, '#fff');
     }
-    if (game.state === 'complete' && game.doneT < 1.6) {
-      label('You made it!', W / 2, H * 0.3, 46 + Math.sin(game.doneT * 10) * 3, '#ffd23f');
+    if (game.state === 'complete' && game.doneT < 1.4) {
+      label('You made it!', W / 2, H * 0.5, 46 + Math.sin(game.doneT * 10) * 3, '#ffd23f');
     }
   }
   const CHEERS = [

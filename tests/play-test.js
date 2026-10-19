@@ -94,6 +94,21 @@ update(STEP);
 console.log(`Coin to 21 points: lives ${before} -> ${game.lives}, bank ${game.coinBank}`);
 if (game.lives !== before + 1 || game.coinBank !== 1) failures++;
 
+// Balancing: standing near the end of a banana slides you off; the middle is steady.
+for (const [n, off] of [[1, 0], [1, 0.6], [15, 0], [15, 0.6]]) {
+  startLevel(n, true);
+  game.state = 'playing'; game.villain = null;
+  input.kLeft = input.kRight = false; input.jumpBuffer = 0;
+  const b = game.bananas.find(x => x.type === 'normal' && !x.amp);
+  Object.assign(player, { on: b, x: b.x + off * b.w / 2, y: b.y, vx: 0, vy: 0, slide: 0 });
+  let t = 0;
+  while (player.on === b && t < 3) { update(STEP); t += STEP; }
+  const why = player.on === b ? 'stayed 3s' : b.state === 'falling' ? `banana dropped after ${t.toFixed(2)}s` : `slid off after ${t.toFixed(2)}s`;
+  console.log(`Level ${n}, standing ${off ? 'near the end' : 'in the middle'}: ${why}`);
+  if (off && !why.startsWith('slid')) failures++;
+  if (!off && why.startsWith('slid')) failures++;
+}
+
 // Running out of lives ends the game.
 startLevel(2, true);
 game.state = 'playing'; game.lives = 1;
