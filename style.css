@@ -1,0 +1,245 @@
+/* Gone Bananas!!! - menus, buttons and touch controls.
+   Sizes are in em: game.js sets #stage's font-size so everything scales with the game. */
+:root {
+  --yellow: #ffd23f;
+  --green: #7ed957;
+  --pink: #ff8fc2;
+  --ink: #3b2314;
+  --cream: #fff8e1;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 30%, #1f6b43, #0d2e1d);
+  font-family: 'Fredoka', 'Comic Sans MS', 'Trebuchet MS', system-ui, sans-serif;
+  color: var(--ink);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#stage {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+}
+@media (min-aspect-ratio: 3/4) {
+  #stage { border-radius: 18px; }
+}
+
+#game { display: block; width: 100%; height: 100%; }
+
+.hidden { display: none !important; }
+
+/* ---------- Screens ---------- */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7em;
+  padding: 1.2em;
+  text-align: center;
+  background: rgba(13, 46, 29, 0.25);
+}
+.screen.dim { background: rgba(20, 25, 15, 0.55); }
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6em;
+  width: min(100%, 24em);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 1.2em 1.3em;
+  background: var(--cream);
+  border: 0.25em solid var(--ink);
+  border-radius: 1.3em;
+  box-shadow: 0 0.4em 0 rgba(0, 0, 0, 0.3);
+  animation: pop 0.35s cubic-bezier(0.3, 1.6, 0.6, 1);
+}
+@keyframes pop { from { transform: scale(0.6); opacity: 0; } }
+
+h2 { margin: 0; font-size: 1.9em; }
+h2.title, .win-title {
+  color: var(--yellow);
+  -webkit-text-stroke: 0.08em var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0 0.08em 0 var(--ink);
+}
+h2.title { font-size: 2.2em; }
+
+.logo {
+  margin: 0 0 0.3em;
+  font-size: 4em;
+  line-height: 0.95;
+  color: var(--yellow);
+  -webkit-text-stroke: 0.07em var(--ink);
+  paint-order: stroke fill;
+  text-shadow: 0 0.09em 0 var(--ink);
+  transform: rotate(-4deg);
+}
+.logo span { display: block; animation: bob 1.6s ease-in-out infinite; }
+.logo span:nth-child(2) { color: #fff176; font-size: 1.05em; animation-delay: 0.25s; }
+@keyframes bob { 50% { transform: translateY(-0.12em) rotate(2deg); } }
+
+.note { margin: 0; font-size: 1.05em; font-weight: 600; }
+.screen > .note { color: #fff; text-shadow: 0 0.1em 0 var(--ink); }
+.copy { margin: 0; font-size: 0.8em; color: rgba(255, 255, 255, 0.85); text-shadow: 0 0.1em 0 var(--ink); }
+.cheer { margin: 0; font-size: 1.1em; font-weight: 700; color: #d6337a; }
+.big-emoji { margin: 0; font-size: 3em; }
+.row { display: flex; gap: 0.5em; flex-wrap: wrap; justify-content: center; }
+
+/* ---------- Buttons ---------- */
+button { font: inherit; color: inherit; cursor: pointer; border: none; background: none; padding: 0; }
+
+.btn {
+  min-width: 9em;
+  padding: 0.5em 1.3em;
+  font-size: 1.3em;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--yellow);
+  border: 0.14em solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 0 0.22em 0 var(--ink);
+  transition: transform 0.08s;
+}
+.btn:active { transform: translateY(0.18em); box-shadow: 0 0.04em 0 var(--ink); }
+.btn.big { font-size: 1.7em; }
+.btn.small { min-width: 0; font-size: 1em; padding: 0.4em 1em; }
+.btn.green { background: var(--green); }
+.btn.ghost { background: rgba(255, 255, 255, 0.92); }
+.btn:focus-visible { outline: 0.15em dashed #fff; outline-offset: 0.2em; }
+
+.icon-btn {
+  position: absolute;
+  top: 0.45em;
+  right: 0.45em;
+  width: 2.7em;
+  height: 2.7em;
+  font-size: 1em;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--yellow);
+  border: 0.14em solid var(--ink);
+  border-radius: 50%;
+  box-shadow: 0 0.18em 0 var(--ink);
+}
+
+/* ---------- How to play ---------- */
+.how { margin: 0; padding: 0; list-style: none; text-align: left; font-size: 1.02em; line-height: 1.35; }
+.how li { margin: 0.35em 0; }
+.key {
+  display: inline-block;
+  min-width: 2.4em;
+  margin-right: 0.3em;
+  padding: 0 0.3em;
+  text-align: center;
+  font-weight: 700;
+  background: #fff;
+  border: 0.1em solid var(--ink);
+  border-radius: 0.4em;
+}
+
+/* ---------- Character select ---------- */
+#char-grid { display: flex; gap: 0.6em; justify-content: center; width: 100%; }
+.char-card {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  max-width: 9em;
+  padding: 0.5em 0.3em 0.7em;
+  background: rgba(255, 248, 225, 0.92);
+  border: 0.18em solid var(--ink);
+  border-radius: 1em;
+  box-shadow: 0 0.25em 0 var(--ink);
+  transition: transform 0.15s;
+}
+.char-card canvas { width: 100%; height: auto; }
+.char-card b { font-size: 1.3em; }
+.char-card small { font-size: 0.8em; opacity: 0.8; }
+.char-card.selected { background: var(--yellow); transform: scale(1.07) rotate(-2deg); }
+
+/* ---------- Level select ---------- */
+#level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.55em; width: min(100%, 24em); }
+.level-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  font-weight: 700;
+  border: 0.15em solid var(--ink);
+  border-radius: 0.9em;
+  box-shadow: 0 0.2em 0 var(--ink);
+}
+.level-btn b { font-size: 1.6em; line-height: 1; }
+.level-btn .stars { font-size: 0.75em; color: #ff8c00; letter-spacing: -0.05em; }
+.level-btn .stars i { font-style: normal; color: rgba(59, 35, 20, 0.25); }
+.level-btn.slow { background: #b8f08f; }
+.level-btn.medium { background: #ffd08a; }
+.level-btn.fast { background: #ff9f9f; }
+.level-btn.locked { background: rgba(255, 255, 255, 0.5); cursor: default; box-shadow: none; }
+.level-btn .lock { font-size: 1.3em; opacity: 0.7; }
+.legend { display: flex; gap: 0.5em; margin: 0; font-weight: 700; }
+.legend span { padding: 0.15em 0.6em; border: 0.1em solid var(--ink); border-radius: 999px; }
+.legend .slow { background: #b8f08f; }
+.legend .medium { background: #ffd08a; }
+.legend .fast { background: #ff9f9f; }
+
+/* ---------- Level complete ---------- */
+.stars-big { display: flex; gap: 0.2em; font-size: 3.2em; line-height: 1; }
+.stars-big .star { color: rgba(59, 35, 20, 0.18); }
+.stars-big .star.on {
+  color: #ffc400;
+  -webkit-text-stroke: 0.04em var(--ink);
+  animation: star-pop 0.5s cubic-bezier(0.3, 1.8, 0.6, 1) both;
+}
+@keyframes star-pop { from { transform: scale(0) rotate(-90deg); } }
+.goals { margin: 0; padding: 0; list-style: none; text-align: left; font-weight: 600; }
+
+/* ---------- Touch controls ---------- */
+#touch {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 0 0.8em calc(0.8em + env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+#touch .pad { display: flex; gap: 0.7em; }
+#touch button {
+  pointer-events: auto;
+  width: 4.6em;
+  height: 4.6em;
+  font-size: 1em;
+  font-weight: 700;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.55);
+  border: 0.18em solid rgba(59, 35, 20, 0.7);
+  border-radius: 50%;
+  touch-action: none;
+}
+#touch #t-left, #touch #t-right { font-size: 1.5em; width: 3.1em; height: 3.1em; }
+#touch #t-jump { width: 6em; height: 6em; font-size: 1.1em; background: rgba(255, 210, 63, 0.7); }
+#touch button.down { transform: scale(0.92); background: rgba(255, 255, 255, 0.85); }

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Gone Bananas!!!</title>
+  <meta name="description" content="Hop up the banana tree with Gorilla, Dog or PomPom! A jumping game for kids that plays on phones, tablets and computers.">
+  <meta name="theme-color" content="#2e9e5b">
+  <meta property="og:title" content="Gone Bananas!!!">
+  <meta property="og:description" content="Hop up the banana tree with Gorilla, Dog or PomPom!">
+  <meta property="og:image" content="icons/icon-512.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="stage">
+    <canvas id="game" aria-label="Gone Bananas game"></canvas>
+
+    <button id="btn-pause" class="icon-btn hidden" aria-label="Pause">❚❚</button>
+
+    <div id="touch" class="hidden">
+      <div class="pad">
+        <button id="t-left" aria-label="Move left">◀</button>
+        <button id="t-right" aria-label="Move right">▶</button>
+      </div>
+      <button id="t-jump" aria-label="Jump">JUMP</button>
+    </div>
+
+    <!-- Title -->
+    <section id="scr-title" class="screen">
+      <h1 class="logo"><span>Gone</span><span>Bananas!!!</span></h1>
+      <button class="btn big primary" data-go="chars">▶ Play</button>
+      <button class="btn ghost" data-go="how">How to play</button>
+      <div class="row">
+        <button class="btn small ghost" data-toggle="sound"></button>
+        <button class="btn small ghost" data-toggle="music"></button>
+      </div>
+      <p class="note">Best score: <b id="best">0</b></p>
+      <p class="copy">© 2026 Isaac D. · Made for PomPom</p>
+    </section>
+
+    <!-- How to play -->
+    <section id="scr-how" class="screen dim hidden">
+      <div class="panel">
+        <h2>How to play</h2>
+        <ul class="how">
+          <li><span class="key">◀ ▶</span> Move with the arrow keys or the ◀ ▶ buttons</li>
+          <li><span class="key">▲</span> Jump with the up arrow, Space or JUMP</li>
+          <li>🍌 Bananas wobble, turn brown and drop if you stay too long. Keep hopping!</li>
+          <li>🪙 Coins are worth 1, 2 or 5. Every <b>20 coin points</b> = ❤️ extra life</li>
+          <li>🌴 Reach the top of the banana tree to finish the level</li>
+          <li>⭐ Get 3 stars: reach the top, don't fall, grab most coins</li>
+          <li>🐢 Levels 1-5 slow · 🐇 6-10 medium · 🚀 11-15 fast</li>
+        </ul>
+        <button class="btn primary" data-go="title">Got it!</button>
+      </div>
+    </section>
+
+    <!-- Character select -->
+    <section id="scr-chars" class="screen hidden">
+      <h2 class="title">Choose your climber</h2>
+      <div id="char-grid"></div>
+      <button class="btn big primary" data-go="levels">Next ▶</button>
+      <button class="btn small ghost" data-go="title">◀ Back</button>
+    </section>
+
+    <!-- Level select -->
+    <section id="scr-levels" class="screen hidden">
+      <h2 class="title">Pick a level</h2>
+      <div id="level-grid"></div>
+      <p class="legend"><span class="slow">🐢 Slow</span> <span class="medium">🐇 Medium</span> <span class="fast">🚀 Fast</span></p>
+      <button class="btn small ghost" data-go="chars">◀ Back</button>
+    </section>
+
+    <!-- Pause -->
+    <section id="scr-pause" class="screen dim hidden">
+      <div class="panel">
+        <h2>Paused</h2>
+        <button class="btn primary" data-act="resume">▶ Keep playing</button>
+        <button class="btn ghost" data-act="restart">↻ Restart level</button>
+        <div class="row">
+          <button class="btn small ghost" data-toggle="sound"></button>
+          <button class="btn small ghost" data-toggle="music"></button>
+        </div>
+        <button class="btn small ghost" data-act="menu">⌂ Menu</button>
+      </div>
+    </section>
+
+    <!-- Level complete -->
+    <section id="scr-complete" class="screen dim hidden">
+      <div class="panel">
+        <h2 id="c-title">Level complete!</h2>
+        <div id="c-stars" class="stars-big"></div>
+        <ul id="c-goals" class="goals"></ul>
+        <p id="c-stats" class="note"></p>
+        <p id="c-cheer" class="cheer"></p>
+        <button class="btn big green primary" data-act="next">Next level ▶</button>
+        <div class="row">
+          <button class="btn small ghost" data-act="restart">↻ Replay</button>
+          <button class="btn small ghost" data-act="menu">⌂ Menu</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Game over -->
+    <section id="scr-over" class="screen dim hidden">
+      <div class="panel">
+        <h2>Out of lives!</h2>
+        <p class="big-emoji">🙈</p>
+        <p id="o-text" class="note"></p>
+        <button class="btn big primary" data-act="retry">↻ Try again</button>
+        <button class="btn small ghost" data-act="menu">⌂ Menu</button>
+      </div>
+    </section>
+
+    <!-- Finished all levels -->
+    <section id="scr-win" class="screen dim hidden">
+      <div class="panel">
+        <h2 class="win-title">YOU WENT BANANAS!!!</h2>
+        <p class="big-emoji">🏆🍌🎉</p>
+        <p id="w-text" class="note"></p>
+        <button class="btn big green primary" data-act="again">Play again</button>
+        <button class="btn small ghost" data-act="menu">⌂ Menu</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/levels.js"></script>
+  <script src="js/game.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</body>
+</html>
