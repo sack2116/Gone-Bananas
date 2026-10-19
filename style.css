@@ -54,7 +54,7 @@ body {
   gap: 0.7em;
   padding: 1.2em;
   text-align: center;
-  background: rgba(13, 46, 29, 0.25);
+  background: rgba(13, 46, 29, 0.12);
 }
 .screen.dim { background: rgba(20, 25, 15, 0.55); }
 
@@ -83,6 +83,17 @@ h2.title, .win-title {
   text-shadow: 0 0.08em 0 var(--ink);
 }
 h2.title { font-size: 2.2em; }
+
+.mascot {
+  width: 7em;
+  height: 7em;
+  margin-bottom: -0.6em;
+  border: 0.2em solid var(--ink);
+  border-radius: 1.6em;
+  box-shadow: 0 0.3em 0 rgba(0, 0, 0, 0.3);
+  animation: wiggle 2.2s ease-in-out infinite;
+}
+@keyframes wiggle { 25% { transform: rotate(-6deg) scale(1.04); } 75% { transform: rotate(6deg); } }
 
 .logo {
   margin: 0 0 0.3em;

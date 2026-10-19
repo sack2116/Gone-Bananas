@@ -689,9 +689,11 @@
     const top = game.goal ? game.goal.y : -2000;
     const t0 = Math.max(top, game.camY - 20), t1 = Math.min(0, game.camY + H + 20);
     if (t1 > t0) {
-      ctx.fillStyle = 'rgba(122, 79, 40, 0.45)';
+      ctx.fillStyle = 'rgba(139, 90, 43, 0.8)';
       ctx.fillRect(W / 2 - 34, t0, 68, t1 - t0);
-      ctx.strokeStyle = 'rgba(80, 50, 20, 0.35)'; ctx.lineWidth = 3;
+      ctx.fillStyle = 'rgba(255, 220, 160, 0.18)';
+      ctx.fillRect(W / 2 - 24, t0, 14, t1 - t0);
+      ctx.strokeStyle = 'rgba(80, 50, 20, 0.5)'; ctx.lineWidth = 3;
       for (let y = Math.ceil(t0 / 70) * 70; y < t1; y += 70) {
         ctx.beginPath(); ctx.moveTo(W / 2 - 34, y); ctx.quadraticCurveTo(W / 2, y + 14, W / 2 + 34, y); ctx.stroke();
       }
@@ -986,6 +988,7 @@
   document.addEventListener('click', e => {
     const el = e.target.closest('button');
     if (!el) return;
+    el.blur();   // so Space/Enter in the game never "click" this button again
     Sound.unlock();
     if (el.dataset.go) { Sound.sfx('click'); show(el.dataset.go); }
     if (el.dataset.toggle) {
@@ -1017,6 +1020,7 @@
     if (k || e.key === 'ArrowDown') e.preventDefault();
     if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') { game.paused ? resume() : pause(); return; }
     if (e.key === 'Enter') {
+      if (document.activeElement && document.activeElement.tagName === 'BUTTON') return;   // the browser clicks it already
       const primary = current && screens[current].querySelector('.primary');
       if (primary) primary.click();
       return;
